@@ -8,6 +8,7 @@ const optionalUrl = z
   .transform((value) => value || undefined);
 
 export const registerSchema = z.object({
+  accountType: z.enum(["GRADUATE", "COMPANY"]).default("GRADUATE"),
   name: z.string().trim().min(2).max(80),
   email: z.string().trim().toLowerCase().email().max(200),
   password: z
@@ -17,10 +18,16 @@ export const registerSchema = z.object({
     .regex(/[A-Z]/, "Password needs an uppercase letter")
     .regex(/[a-z]/, "Password needs a lowercase letter")
     .regex(/[0-9]/, "Password needs a number"),
-  skills: z
-    .array(z.string().trim().min(1).max(40))
-    .max(15)
-    .default([]),
+  skills: z.array(z.string().trim().min(1).max(40)).max(15).default([]),
+  companyName: z.string().trim().max(120).optional().default(""),
+  companyEmail: z.string().trim().toLowerCase().email().max(200).optional().or(z.literal("")),
+}).superRefine((value, ctx) => {
+  if (value.accountType === "COMPANY" && !value.companyName) {
+    ctx.addIssue({ code: "custom", path: ["companyName"], message: "Company name is required" });
+  }
+  if (value.accountType === "COMPANY" && !value.companyEmail) {
+    ctx.addIssue({ code: "custom", path: ["companyEmail"], message: "Company email is required" });
+  }
 });
 
 export const loginSchema = z.object({
@@ -83,9 +90,72 @@ export const messageSchema = z.object({
   body: z.string().trim().min(1).max(2000),
 });
 
+export const hackathonSchema = z.object({
+  name: z.string().trim().min(3).max(140),
+  description: z.string().trim().min(10).max(2000),
+  location: z.string().trim().max(140).optional().default(""),
+  mode: z.enum(["ONLINE", "IN_PERSON", "HYBRID"]).default("ONLINE"),
+  startDate: z.string().min(1),
+  endDate: z.string().min(1),
+  registrationDeadline: z.string().optional().nullable(),
+  websiteUrl: optionalUrl,
+  technologies: z.array(z.string().trim().min(1).max(40)).max(20).default([]),
+}).superRefine((value, ctx) => {
+  const start = new Date(value.startDate);
+  const end = new Date(value.endDate);
+  const deadline = value.registrationDeadline ? new Date(value.registrationDeadline) : null;
+
+  if (Number.isNaN(start.getTime())) {
+    ctx.addIssue({ code: "custom", path: ["startDate"], message: "Invalid start date" });
+  }
+  if (Number.isNaN(end.getTime())) {
+    ctx.addIssue({ code: "custom", path: ["endDate"], message: "Invalid end date" });
+  }
+  if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end < start) {
+    ctx.addIssue({ code: "custom", path: ["endDate"], message: "End date must be after the start date" });
+  }
+  if (deadline && Number.isNaN(deadline.getTime())) {
+    ctx.addIssue({ code: "custom", path: ["registrationDeadline"], message: "Invalid registration deadline" });
+  }
+});
+
 export const teamSchema = z.object({
   hackathonId: z.string().uuid(),
   name: z.string().trim().min(2).max(100),
   description: z.string().trim().max(500).optional().default(""),
   repositoryUrl: optionalUrl,
+});
+
+
+export const companySchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().toLowerCase().email().max(200),
+  contactPerson: z.string().trim().max(100).optional().default(""),
+  phone: z.string().trim().max(40).optional().default(""),
+  website: optionalUrl,
+  linkedinUrl: optionalUrl,
+  description: z.string().trim().max(1000).optional().default(""),
+});
+
+export const companyProjectSchema = z.object({
+  title: z.string().trim().min(3).max(160),
+  category: z.string().trim().min(2).max(80),
+  summary: z.string().trim().min(10).max(500),
+  description: z.string().trim().min(10).max(4000),
+  requirements: z.string().trim().min(3).max(3000),
+  expectedOutcome: z.string().trim().max(2000).optional().default(""),
+  technologies: z.array(z.string().trim().min(1).max(50)).max(30).default([]),
+  contactEmail: z.string().trim().toLowerCase().email().max(200),
+  contactPhone: z.string().trim().max(40).optional().default(""),
+  githubUrl: optionalUrl,
+  liveDemoUrl: optionalUrl,
+  maxParticipants: z.coerce.number().int().min(1).max(100).default(5),
+});
+
+export const projectUpdateSchema = companyProjectSchema.partial().extend({
+  status: z.enum(["ACTIVE", "FULL", "CLOSED"]).optional(),
+});
+
+export const projectSubscriptionSchema = z.object({
+  action: z.enum(["subscribe", "withdraw"]),
 });

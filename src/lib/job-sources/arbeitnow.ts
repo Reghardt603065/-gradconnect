@@ -1,5 +1,6 @@
 import { cleanText, fetchJson, guessExperience } from "./http";
 import type { JobSourceResult } from "./types";
+import { isSouthAfricanLocation } from "./south-africa";
 
 type ArbeitnowResponse = {
   data: Array<{
@@ -22,7 +23,7 @@ export async function fetchArbeitnowJobs(): Promise<JobSourceResult> {
       "https://www.arbeitnow.com/api/job-board-api",
     );
 
-    const jobs = payload.data.slice(0, 75).map((job) => {
+    const jobs = payload.data.slice(0, 100).map((job) => {
       const description = cleanText(job.description);
       return {
         source: "Arbeitnow",
@@ -40,7 +41,7 @@ export async function fetchArbeitnowJobs(): Promise<JobSourceResult> {
         postedAt: job.created_at ? new Date(job.created_at * 1000) : undefined,
         rawData: job as unknown as Record<string, unknown>,
       };
-    });
+    }).filter((job) => isSouthAfricanLocation(job.location));
 
     return { source: "Arbeitnow", jobs };
   } catch (error) {

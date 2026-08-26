@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 
 export default async function DashboardPage(){
-  const session=await auth(); if(!session?.user?.id) redirect("/login"); const userId=session.user.id;
+  const session=await auth(); if(!session?.user?.id) redirect("/login"); if(session.user.role === "COMPANY") redirect("/dashboard/company"); const userId=session.user.id;
   const [user,applications,certs,hackathons,projects,activities,goals]=await Promise.all([
     prisma.user.findUnique({where:{id:userId},select:{name:true}}),
     prisma.jobApplication.count({where:{userId}}), prisma.certification.findMany({where:{userId},select:{progress:true,status:true}}),

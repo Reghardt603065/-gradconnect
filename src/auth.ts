@@ -80,17 +80,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           username,
           image: user.image,
           githubUsername: (profile as { login?: string } | undefined)?.login,
+          role: "GRADUATE",
           consentAcceptedAt: new Date(),
           notificationPreference: { create: {} },
         },
       });
       user.id = saved.id;
+      (user as { role?: "GRADUATE" | "COMPANY" | "ADMIN" }).role = saved.role;
       return true;
     },
     async jwt({ token, user }) {
       if (user?.id) {
         token.id = user.id;
-        token.role = (user as { role?: "GRADUATE" | "ADMIN" }).role ?? "GRADUATE";
+        token.role = (user as { role?: "GRADUATE" | "COMPANY" | "ADMIN" }).role ?? "GRADUATE";
       }
 
       if ((!token.id || !token.role) && token.email) {

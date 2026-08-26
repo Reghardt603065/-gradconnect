@@ -22,6 +22,7 @@ export async function GET() {
       githubUsername: true,
       linkedinUrl: true,
       createdAt: true,
+      role: true,
     },
   });
   return jsonSuccess(user);

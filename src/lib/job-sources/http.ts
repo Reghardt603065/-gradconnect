@@ -22,6 +22,35 @@ export async function fetchJson<T>(url: string, timeoutMs = 8_000): Promise<T> {
   }
 }
 
+export async function fetchText(
+  url: string,
+  timeoutMs = 8_000,
+  headers: Record<string, string> = {},
+): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        Accept: "text/html,text/plain;q=0.9,*/*;q=0.8",
+        "User-Agent": "GradConnect-Academic-Project/1.0",
+        ...headers,
+      },
+      next: { revalidate: 3600 },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} from ${new URL(url).hostname}`);
+    }
+
+    return response.text();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export function cleanText(value: string | null | undefined) {
   return (value ?? "")
     .replace(/<[^>]*>/g, " ")

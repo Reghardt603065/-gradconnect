@@ -1,5 +1,6 @@
 import { cleanText, fetchJson, guessExperience } from "./http";
 import type { JobSourceResult } from "./types";
+import { isSouthAfricanLocation } from "./south-africa";
 
 type RemotiveResponse = {
   jobs: Array<{
@@ -40,7 +41,7 @@ export async function fetchRemotiveJobs(): Promise<JobSourceResult> {
         postedAt: job.publication_date ? new Date(job.publication_date) : undefined,
         rawData: job as unknown as Record<string, unknown>,
       };
-    });
+    }).filter((job) => isSouthAfricanLocation(job.location));
 
     return { source: "Remotive", jobs };
   } catch (error) {

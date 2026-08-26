@@ -1,0 +1,3 @@
+Scrapy>=2.11,<3
+scrapyd>=1.5,<2
+scrapyd-client>=1.2,<2

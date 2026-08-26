@@ -7,6 +7,8 @@ export const config = {
     "/applications/:path*",
     "/certifications/:path*",
     "/hackathons/:path*",
+    "/projects/:path*",
+    "/portfolio/:path*",
     "/peers/:path*",
     "/messages/:path*",
     "/notifications/:path*",

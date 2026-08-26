@@ -28,25 +28,42 @@ export async function POST(request: Request) {
   }
 
   const passwordHash = await hash(parsed.data.password, 12);
-  const user = await prisma.user.create({
-    data: {
-      name: parsed.data.name,
-      email: parsed.data.email,
-      passwordHash,
-      username,
-      skills: parsed.data.skills,
-      consentAcceptedAt: new Date(),
-      notificationPreference: { create: {} },
-      notifications: {
-        create: {
-          type: "SYSTEM",
-          title: "Welcome to GradConnect",
-          message: "Complete your profile, add a certification, and explore graduate opportunities.",
-          link: "/profile",
+  const user = await prisma.$transaction(async (tx) => {
+    const createdUser = await tx.user.create({
+      data: {
+        name: parsed.data.name,
+        email: parsed.data.email,
+        passwordHash,
+        username,
+        role: parsed.data.accountType,
+        skills: parsed.data.accountType === "GRADUATE" ? parsed.data.skills : [],
+        consentAcceptedAt: new Date(),
+        notificationPreference: { create: {} },
+        notifications: {
+          create: {
+            type: "SYSTEM",
+            title: "Welcome to GradConnect",
+            message: parsed.data.accountType === "COMPANY"
+              ? "Complete your company profile and publish your first project opportunity."
+              : "Complete your profile, add a certification, and explore graduate opportunities.",
+            link: parsed.data.accountType === "COMPANY" ? "/companies/register" : "/profile",
+          },
         },
       },
-    },
-    select: { id: true, name: true, email: true, username: true },
+      select: { id: true, name: true, email: true, username: true, role: true },
+    });
+
+    if (parsed.data.accountType === "COMPANY") {
+      await tx.company.create({
+        data: {
+          ownerId: createdUser.id,
+          name: parsed.data.companyName,
+          email: parsed.data.companyEmail || parsed.data.email,
+          contactPerson: parsed.data.name,
+        },
+      });
+    }
+    return createdUser;
   });
 
   return jsonSuccess(user, 201);

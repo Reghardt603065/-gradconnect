@@ -1,15 +1,113 @@
 import { redirect } from "next/navigation";
-import { Search, MapPin, Building2, Clock3 } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { southAfricaLocationWhere } from "@/lib/job-sources/south-africa";
 import { PageHeader } from "@/components/page-header";
-import { JobActions } from "@/components/job-actions";
+import { JobFeedRefresh } from "@/components/job-feed-refresh";
+import { dedupeJobs } from "@/lib/job-sources/dedupe";
+import {
+  companyFamilyKey,
+  inferExperienceFilter,
+  inferItCategory,
+  isItJob,
+  jobQualityScore,
+  normalizeEmploymentType,
+} from "@/lib/job-sources/taxonomy";
+import { JobMarketplace, type MarketplaceJob } from "@/components/job-marketplace";
 
-export default async function JobsPage({searchParams}:{searchParams:Promise<{q?:string;location?:string;remote?:string}>}){
- const session=await auth();if(!session?.user?.id)redirect('/login'); const params=await searchParams; const q=params.q?.trim()||''; const location=params.location?.trim()||''; const remote=params.remote==='true';
- const jobs=await prisma.jobListing.findMany({where:{AND:[q?{OR:[{title:{contains:q,mode:'insensitive'}},{company:{contains:q,mode:'insensitive'}},{description:{contains:q,mode:'insensitive'}}]}:{},location?{location:{contains:location,mode:'insensitive'}}:{},remote?{remote:true}:{}]},orderBy:[{postedAt:'desc'},{createdAt:'desc'}],take:50,include:{savedBy:{where:{userId:session.user.id},select:{id:true}},applications:{where:{userId:session.user.id},select:{status:true}}}});
- return <><PageHeader title="Job opportunities" description="Search normalised graduate and entry-level listings, save suitable roles and track applications."/>
- <form className="card toolbar" method="GET"><div className="field"><label htmlFor="q">Keywords</label><div style={{position:'relative'}}><Search size={18} style={{position:'absolute',left:12,top:12,color:'#667085'}}/><input className="input" style={{paddingLeft:39}} id="q" name="q" defaultValue={q} placeholder="Developer, data analyst, cybersecurity"/></div></div><div className="field"><label htmlFor="location">Location</label><input className="input" id="location" name="location" defaultValue={location} placeholder="Pretoria, Cape Town, Remote"/></div><label className="field" style={{flex:'0 0 auto'}}><span>Work mode</span><span style={{display:'flex',gap:8,alignItems:'center',height:43}}><input name="remote" value="true" type="checkbox" defaultChecked={remote}/> Remote only</span></label><button className="btn btn-primary">Search jobs</button></form>
- <p className="muted"><strong>{jobs.length}</strong> jobs found. Job listings are collected from configured public API sources.</p>
- <section className="grid">{jobs.length?jobs.map(job=><article className="card job-card" key={job.id}><div><div className="tags"><span className="badge gold">{job.source}</span>{job.remote&&<span className="badge green">Remote</span>}{job.experienceLevel&&<span className="badge blue">{job.experienceLevel}</span>}</div><h3>{job.title}</h3><strong><Building2 size={15}/> {job.company}</strong><div className="job-meta"><span><MapPin size={14}/> {job.location||'Location not supplied'}</span><span><Clock3 size={14}/> {job.postedAt?job.postedAt.toLocaleDateString('en-ZA'):'Date unavailable'}</span><span>{job.jobType||'Job type not supplied'}</span></div><p className="muted">{job.description.replace(/<[^>]+>/g,' ').slice(0,260)}{job.description.length>260?'…':''}</p></div><JobActions jobId={job.id} applyUrl={job.applyUrl} initialSaved={job.savedBy.length>0} applicationStatus={job.applications[0]?.status}/></article>):<div className="card empty">No matching jobs were found. Try a broader keyword or remove a filter.</div>}</section></>
+function cleanDescription(value: string) {
+  const text = value
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text.length > 320 ? `${text.slice(0, 317).trimEnd()}…` : text;
+}
+
+export default async function JobsPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  // The page only reads PostgreSQL. Live sources refresh separately in the
+  // background, so browsing/searching remains fast even with many providers.
+  const rows = await prisma.jobListing.findMany({
+    where: {
+      AND: [
+        southAfricaLocationWhere,
+        {
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gte: new Date() } },
+          ],
+        },
+      ],
+    },
+    orderBy: [{ postedAt: "desc" }, { createdAt: "desc" }],
+    take: 1200,
+    select: {
+      id: true,
+      source: true,
+      title: true,
+      company: true,
+      description: true,
+      location: true,
+      jobType: true,
+      experienceLevel: true,
+      category: true,
+      salaryMin: true,
+      salaryMax: true,
+      currency: true,
+      applyUrl: true,
+      remote: true,
+      postedAt: true,
+      createdAt: true,
+      savedBy: {
+        where: { userId: session.user.id },
+        select: { id: true },
+      },
+      applications: {
+        where: { userId: session.user.id },
+        select: { status: true },
+      },
+    },
+  });
+
+  const jobs: MarketplaceJob[] = dedupeJobs(rows)
+    .filter(isItJob)
+    .map((job) => ({
+      id: job.id,
+      source: job.source,
+      title: job.title,
+      company: job.company,
+      companyFamily: companyFamilyKey(job.company),
+      description: cleanDescription(job.description) || `${job.title} opportunity at ${job.company}.`,
+      location: job.location || "South Africa",
+      category: inferItCategory(job),
+      experience: inferExperienceFilter(job),
+      employment: normalizeEmploymentType(job.jobType),
+      applyUrl: job.applyUrl,
+      remote: job.remote,
+      postedAt: job.postedAt?.toISOString() || null,
+      createdAt: job.createdAt.toISOString(),
+      salaryMin: job.salaryMin,
+      salaryMax: job.salaryMax,
+      currency: job.currency,
+      quality: jobQualityScore(job),
+      saved: job.savedBy.length > 0,
+      applicationStatus: job.applications[0]?.status,
+    }));
+
+  return (
+    <>
+      <PageHeader
+        title="South African IT Jobs"
+        description="A marketplace-style feed of software, data, cyber, cloud and IT opportunities from direct employers and South African job boards."
+      />
+      <JobFeedRefresh hasJobs={jobs.length > 0} />
+      <JobMarketplace initialJobs={jobs} />
+    </>
+  );
 }

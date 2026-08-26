@@ -9,6 +9,7 @@ datasource db {
 
 enum UserRole {
   GRADUATE
+  COMPANY
   ADMIN
 }
 
@@ -62,7 +63,20 @@ enum NotificationType {
   HACKATHON
   PEER
   MESSAGE
+  PROJECT
   SYSTEM
+}
+
+enum ProjectStatus {
+  ACTIVE
+  FULL
+  CLOSED
+}
+
+enum ProjectSubscriptionStatus {
+  ACTIVE
+  COMPLETED
+  WITHDRAWN
 }
 
 enum ActivityType {
@@ -110,6 +124,8 @@ model User {
   notifications          Notification[]
   activities             Activity[]
   notificationPreference NotificationPreference?
+  company                Company?                  @relation("CompanyOwner")
+  projectSubscriptions   ProjectSubscription[]
 
   @@index([username])
   @@index([createdAt])
@@ -408,4 +424,68 @@ model CertificationListing {
   @@index([provider])
   @@index([isFree])
   @@index([category])
+}
+
+model Company {
+  id            String          @id @default(uuid())
+  ownerId       String          @unique
+  name          String
+  email         String
+  contactPerson String?
+  phone         String?
+  description   String?
+  website       String?
+  linkedinUrl   String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  owner         User            @relation("CompanyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  projects      CompanyProject[]
+
+  @@index([name])
+}
+
+model CompanyProject {
+  id              String                  @id @default(uuid())
+  companyId       String
+  title           String
+  category        String
+  summary         String
+  description     String
+  requirements    String
+  expectedOutcome String?
+  technologies    String[]                @default([])
+  contactEmail    String
+  contactPhone    String?
+  githubUrl       String?
+  liveDemoUrl     String?
+  maxParticipants Int                     @default(5)
+  status          ProjectStatus           @default(ACTIVE)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  company         Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  subscriptions   ProjectSubscription[]
+
+  @@index([companyId])
+  @@index([category])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ProjectSubscription {
+  id           String                    @id @default(uuid())
+  projectId    String
+  studentId    String
+  status       ProjectSubscriptionStatus @default(ACTIVE)
+  subscribedAt DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  project      CompanyProject            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  student      User                      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, studentId])
+  @@index([projectId])
+  @@index([studentId])
+  @@index([status])
 }

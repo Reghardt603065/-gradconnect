@@ -8,6 +8,11 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
   const { id } = await context.params;
   const hackathon = await prisma.hackathon.findUnique({ where: { id } });
   if (!hackathon) return jsonError("Hackathon not found", 404);
+  const now = new Date();
+  if (hackathon.endDate < now) return jsonError("This hackathon has already ended", 409);
+  if (hackathon.registrationDeadline && hackathon.registrationDeadline < now) {
+    return jsonError("Registration for this hackathon has closed", 409);
+  }
 
   const participant = await prisma.hackathonParticipant.upsert({
     where: { userId_hackathonId: { userId: sessionUser.id, hackathonId: id } },
