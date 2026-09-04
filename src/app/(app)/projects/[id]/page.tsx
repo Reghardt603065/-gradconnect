@@ -4,7 +4,7 @@ import { getProjectForUser } from "@/services/project-service";
 import { PageHeader } from "@/components/page-header";
 import { ProjectDetail } from "@/components/project-detail";
 
-export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string; }>; }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   const { id } = await params;

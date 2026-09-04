@@ -3,4 +3,19 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { PreferencesForm } from "@/components/preferences-form";
-export default async function SettingsPage(){const session=await auth();if(!session?.user?.id)redirect('/login');const row=await prisma.notificationPreference.upsert({where:{userId:session.user.id},create:{userId:session.user.id},update:{}});const prefs={newJobs:row.newJobs,applicationReminders:row.applicationReminders,certificationReminders:row.certificationReminders,peerUpdates:row.peerUpdates,hackathonReminders:row.hackathonReminders};return <><PageHeader title="Settings" description="Control your communication preferences and integration settings."/><section className="grid grid-2"><PreferencesForm initial={prefs}/><article className="card"><h2>Deployment and integration status</h2><div className="list"><div className="list-item"><div><strong>Database</strong><div className="helper">PostgreSQL through Prisma ORM</div></div><span className="badge green">Configured</span></div><div className="list-item"><div><strong>Job sources</strong><div className="helper">South African company boards across banking, fintech, software, e-commerce and consulting</div></div><span className="badge green">Configured</span></div><div className="list-item"><div><strong>GitHub</strong><div className="helper">Public repository sync; OAuth sign-in is optional</div></div><span className="badge blue">Optional OAuth</span></div><div className="list-item"><div><strong>LinkedIn</strong><div className="helper">Profile URL supported. Full API integration requires approved external access.</div></div><span className="badge gold">Scaffolded</span></div><div className="list-item"><div><strong>Daily job ingestion</strong><div className="helper">Vercel Cron calls the protected API route</div></div><span className="badge green">Configured</span></div></div><p className="muted">Environment variables control optional integrations and deployment settings.</p></article></section></>}
+export default async function SettingsPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect('/login');
+  const row = await prisma.notificationPreference.upsert({ where: { userId: session.user.id }, create: { userId: session.user.id }, update: {} });
+  const prefs = {
+    newJobs: row.newJobs,
+    applicationReminders: row.applicationReminders,
+    certificationReminders: row.certificationReminders,
+    peerUpdates: row.peerUpdates,
+    hackathonReminders: row.hackathonReminders
+  };
+  return <>
+    <PageHeader title="Settings" description="Manage your notification preferences." />
+    <section className="grid"><PreferencesForm initial={prefs} /></section>
+  </>;
+}

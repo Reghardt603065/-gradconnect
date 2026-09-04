@@ -12,12 +12,20 @@ export default async function CreateProjectPage() {
   const company = await getCompanyForUser(session.user.id);
   if (!company) {
     return <>
-      <PageHeader title="Post a project" description="Create a company profile first, then publish your project opportunity." />
-      <div className="card"><h2>Company profile required</h2><p className="muted">Set up the company details that students will see alongside your projects.</p><Link className="btn btn-primary" href="/companies/register">Register company</Link></div>
+      <PageHeader
+        title="Post a project"
+        description="Create a company profile first, then publish your project opportunity." />
+      <div className="card">
+        <h2>Company profile required</h2>
+        <p className="muted">Set up the company details that students will see alongside your projects.</p>
+        <Link className="btn btn-primary" href="/companies/register">Register company</Link>
+      </div>
     </>;
   }
   return <>
-    <PageHeader title="Post a project" description={`Create a real-world project opportunity for students on behalf of ${company.name}.`} />
+    <PageHeader
+      title="Post a project"
+      description={`Create a real-world project opportunity for students on behalf of ${company.name}.`} />
     <ProjectForm />
   </>;
 }

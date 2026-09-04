@@ -51,17 +51,51 @@ export function LoginForm() {
       <div className="field">
         <label>Account type</label>
         <div className="grid grid-2" style={{ gap: 10 }}>
-          <button type="button" className={`card account-choice ${accountType === "GRADUATE" ? "active" : ""}`} onClick={() => setAccountType("GRADUATE")} aria-pressed={accountType === "GRADUATE"}>
-            <GraduationCap size={20} /><strong>Graduate account</strong><span className="helper">Access your learning and career workspace.</span>
+          <button
+            type="button"
+            className={`card account-choice ${accountType === "GRADUATE" ? "active" : ""}`}
+            onClick={() => setAccountType("GRADUATE")}
+            aria-pressed={accountType === "GRADUATE"}>
+            <GraduationCap size={20} />
+            <strong>Graduate account</strong>
+            <span className="helper">Access your learning and career workspace.</span>
           </button>
-          <button type="button" className={`card account-choice ${accountType === "COMPANY" ? "active" : ""}`} onClick={() => setAccountType("COMPANY")} aria-pressed={accountType === "COMPANY"}>
-            <BriefcaseBusiness size={20} /><strong>Company account</strong><span className="helper">Manage your company and project opportunities.</span>
+          <button
+            type="button"
+            className={`card account-choice ${accountType === "COMPANY" ? "active" : ""}`}
+            onClick={() => setAccountType("COMPANY")}
+            aria-pressed={accountType === "COMPANY"}>
+            <BriefcaseBusiness size={20} />
+            <strong>Company account</strong>
+            <span className="helper">Manage your company and project opportunities.</span>
           </button>
         </div>
       </div>
-      <div className="field"><label htmlFor="email">Email address</label><input className="input" id="email" name="email" type="email" placeholder="Enter your email address" required autoComplete="email" /></div>
-      <div className="field"><label htmlFor="password">Password</label><input className="input" id="password" name="password" type="password" placeholder="Enter your password" required autoComplete="current-password" /></div>
-      <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? "Signing in…" : "Log in"}</button>
+      <div className="field">
+        <label htmlFor="email">Email address</label>
+        <input
+          className="input"
+          id="email"
+          name="email"
+          type="email"
+          placeholder="Enter your email address"
+          required
+          autoComplete="email" />
+      </div>
+      <div className="field">
+        <label htmlFor="password">Password</label>
+        <input
+          className="input"
+          id="password"
+          name="password"
+          type="password"
+          placeholder="Enter your password"
+          required
+          autoComplete="current-password" />
+      </div>
+      <button className="btn btn-primary" type="submit" disabled={loading}>
+        {loading ? "Signing in…" : "Log in"}
+      </button>
     </form>
   );
 }

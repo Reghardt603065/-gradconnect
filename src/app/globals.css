@@ -315,3 +315,20 @@ img { max-width: 100%; }
   .market-job-footer .job-actions { width:100%; }
   .market-job-footer .job-actions .btn { flex:1; }
 }
+
+/* --- Friends / graduate directory -------------------------------------- */
+.friends-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; }
+.friend-card { display:flex; flex-direction:column; gap:14px; min-height:100%; }
+.friend-card-top { display:flex; align-items:center; gap:14px; }
+.friend-card-top h3 { margin:0 0 3px; color:var(--navy); }
+.friend-avatar { width:64px; height:64px; border-radius:18px; font-size:1.25rem; flex:0 0 auto; }
+.friend-headline { margin:0; font-weight:750; color:#344054; }
+.friend-stats { display:flex; flex-wrap:wrap; gap:8px 14px; color:var(--muted); font-size:.82rem; padding-top:4px; margin-top:auto; }
+.friend-profile-hero { display:grid; grid-template-columns:auto 1fr; gap:22px; align-items:center; }
+.friend-profile-hero h1 { margin:5px 0; color:var(--navy); font-size:clamp(2rem,4vw,3rem); letter-spacing:-.04em; }
+.friend-profile-headline { margin:0; color:#475467; font-size:1.05rem; }
+.friend-profile-meta { display:flex; flex-wrap:wrap; gap:10px 18px; color:var(--muted); margin-top:10px; }
+.friend-profile-meta span { display:inline-flex; align-items:center; gap:6px; }
+
+@media (max-width:1100px) { .friends-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:600px) { .friends-grid { grid-template-columns:1fr; } .friend-profile-hero { grid-template-columns:1fr; } }

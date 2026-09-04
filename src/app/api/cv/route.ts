@@ -48,7 +48,12 @@ export async function GET() {
 
   draw(user.name, 22, true);
   draw(user.headline || "IT Graduate", 12, true);
-  draw([user.email, user.location, user.githubUsername ? `github.com/${user.githubUsername}` : null, user.linkedinUrl].filter(Boolean).join(" | "), 9);
+  draw([
+    user.email,
+    user.location,
+    user.githubUsername ? `github.com/${user.githubUsername}` : null,
+    user.linkedinUrl
+  ].filter(Boolean).join(" | "), 9);
   y -= 8;
 
   if (user.bio) {

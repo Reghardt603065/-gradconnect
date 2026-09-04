@@ -1,11 +1,11 @@
-type DevpostTheme = string | { name?: string | null };
+type DevpostTheme = string | { name?: string | null; };
 
 type DevpostHackathon = {
   id?: number | string;
   title?: string | null;
   url?: string | null;
   organization_name?: string | null;
-  displayed_location?: string | { location?: string | null } | null;
+  displayed_location?: string | { location?: string | null; } | null;
   open_state?: string | null;
   submission_period_dates?: string | null;
   time_left_to_submission?: string | null;
@@ -39,7 +39,7 @@ export type DiscoveredHackathon = {
   availabilityLabel: string;
 };
 
-const CURATED_SOUTH_AFRICA_2026: Array<DiscoveredHackathon & { validUntil: string }> = [
+const CURATED_SOUTH_AFRICA_2026: Array<DiscoveredHackathon & { validUntil: string; }> = [
   {
     id: "sa:kzn-sadc-ai-hackathon-2026",
     name: "KZN AI Summit & SADC AI Hackathon 2026",

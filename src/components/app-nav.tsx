@@ -30,6 +30,7 @@ const graduateLinks: readonly NavItem[] = [
   ["/projects", "Projects", Code2],
   ["/hackathons", "Hackathons", Trophy],
   ["/portfolio", "Portfolio", FolderKanban],
+  ["/friends", "Friends", Users],
   ["/peers", "Peers & goals", Users],
   ["/messages", "Messages", MessageCircle],
   ["/notifications", "Notifications", Bell],
@@ -56,7 +57,7 @@ export function AppNav({ role }: { role: Role }) {
           key={href}
           href={href}
           className={`nav-link ${
-            pathname === href || (href === "/projects" && pathname.startsWith("/projects/"))
+            pathname === href || pathname.startsWith(`${href}/`)
               ? "active"
               : ""
           }`}

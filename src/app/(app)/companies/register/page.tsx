@@ -10,7 +10,9 @@ export default async function CompanyRegisterPage() {
   if (session.user.role !== "COMPANY") redirect("/projects");
   const company = await getCompanyForUser(session.user.id);
   return <>
-    <PageHeader title="Company profile" description="Register the company identity students will see when browsing your project opportunities." />
+    <PageHeader
+      title="Company profile"
+      description="Register the company identity students will see when browsing your project opportunities." />
     <CompanyForm initial={company} />
   </>;
 }

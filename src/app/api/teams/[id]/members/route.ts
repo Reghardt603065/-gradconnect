@@ -5,7 +5,7 @@ import { notifyUser } from "@/lib/activity";
 
 const schema = z.object({ userId: z.string().uuid(), role: z.string().trim().max(60).default("Member") });
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string; }>; }) {
   const sessionUser = await requireApiUser();
   if (!sessionUser) return jsonError("Unauthorized", 401);
   const { id } = await context.params;

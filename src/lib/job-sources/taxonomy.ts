@@ -204,7 +204,7 @@ function stableCompanyScore(company: string) {
  * Strict round-robin rotation. Jobs inside each employer are quality-ranked,
  * and every employer gets one turn before that employer can appear again.
  */
-export function diversifyByCompany<T extends ClassifiableJob & { company: string }>(
+export function diversifyByCompany<T extends ClassifiableJob & { company: string; }>(
   jobs: T[],
   limit = 300,
   maxPerCompany = 8,
