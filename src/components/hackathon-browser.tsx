@@ -1,7 +1,16 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { CalendarDays, ExternalLink, MapPin, Plus, Search, Trophy, Users } from "lucide-react";
+import {
+  CalendarDays,
+  ExternalLink,
+  MapPin,
+  Plus,
+  Search,
+  Trash2,
+  Trophy,
+  Users,
+} from "lucide-react";
 
 type Hack = {
   id: string;
@@ -21,6 +30,7 @@ type Hack = {
   external: boolean;
   dateLabel: string | null;
   availabilityLabel: string;
+  canDelete: boolean;
 };
 
 type ApiResponse<T> = {
@@ -28,6 +38,11 @@ type ApiResponse<T> = {
   data?: T;
   error?: string;
 };
+
+type CreatedHackathon = Omit<
+  Hack,
+  "joined" | "participants" | "teams" | "external" | "dateLabel" | "availabilityLabel" | "canDelete"
+>;
 
 function splitTechnologies(value: FormDataEntryValue | null) {
   return String(value || "")
@@ -110,7 +125,7 @@ export function HackathonBrowser({ initial }: { initial: Hack[] }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const body: ApiResponse<Omit<Hack, "joined" | "participants" | "teams">> = await response.json();
+    const body: ApiResponse<CreatedHackathon> = await response.json();
 
     if (!response.ok || !body.data) {
       setError(body.error || "Hackathon could not be created.");
@@ -126,6 +141,7 @@ export function HackathonBrowser({ initial }: { initial: Hack[] }) {
         external: false,
         dateLabel: null,
         availabilityLabel: "GradConnect community",
+        canDelete: true,
       };
       return [...current, next].sort((a, b) => {
         const aTime = a.startDate ? new Date(a.startDate).getTime() : Number.MAX_SAFE_INTEGER;
@@ -136,6 +152,41 @@ export function HackathonBrowser({ initial }: { initial: Hack[] }) {
     form.reset();
     setShowCreate(false);
     setMessage("Hackathon created. It is now visible to GradConnect users.");
+  }
+
+
+  async function deleteHackathon(id: string, name: string) {
+    const confirmed = window.confirm(
+      `Delete "${name}"? This will also remove its GradConnect teams and participants.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError("");
+    setMessage("");
+
+    const response = await fetch(`/api/hackathons/${id}`, {
+      method: "DELETE",
+    });
+
+    const body: ApiResponse<{ deleted: string }> = await response.json();
+
+    if (!response.ok) {
+      setError(body.error || "Hackathon could not be deleted.");
+      return;
+    }
+
+    setItems((current) =>
+      current.filter((item) => item.id !== id),
+    );
+
+    if (selected === id) {
+      setSelected("");
+    }
+
+    setMessage("Hackathon deleted.");
   }
 
   async function createTeam(event: FormEvent<HTMLFormElement>) {
@@ -157,7 +208,7 @@ export function HackathonBrowser({ initial }: { initial: Hack[] }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const body: ApiResponse<unknown> = await response.json();
+    const body: ApiResponse<{ id: string }> = await response.json();
 
     if (!response.ok) {
       setError(body.error || "Team could not be created.");
@@ -166,10 +217,21 @@ export function HackathonBrowser({ initial }: { initial: Hack[] }) {
 
     setMessage("Team created for this hackathon.");
     setItems((current) =>
-      current.map((item) => (item.id === selected ? { ...item, teams: item.teams + 1 } : item)),
+      current.map((item) =>
+        item.id === selected
+          ? {
+              ...item,
+              teams: item.teams + 1,
+            }
+          : item,
+      ),
     );
     form.reset();
     setSelected("");
+
+    if (body.data?.id) {
+      window.location.href = `/teams/${body.data.id}`;
+    }
   }
 
   return (
@@ -308,6 +370,7 @@ export function HackathonBrowser({ initial }: { initial: Hack[] }) {
                   {ended && <span className="badge red">Ended</span>}
                   {!ended && registrationClosed && <span className="badge red">Registration closed</span>}
                   {hackathon.joined && <span className="badge green">Joined</span>}
+                  {hackathon.canDelete && <span className="badge gold">Created by you</span>}
                 </div>
                 <h3 style={{ marginTop: 14 }}>{hackathon.name}</h3>
                 <div className="tags">
@@ -368,9 +431,26 @@ export function HackathonBrowser({ initial }: { initial: Hack[] }) {
                         </button>
                       )}
                       {hackathon.websiteUrl && (
-                        <a className="btn btn-secondary btn-small" href={hackathon.websiteUrl} target="_blank" rel="noreferrer">
+                        <a
+                          className="btn btn-secondary btn-small"
+                          href={hackathon.websiteUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
                           Event website
                         </a>
+                      )}
+
+                      {hackathon.canDelete && (
+                        <button
+                          className="btn btn-danger btn-small"
+                          type="button"
+                          onClick={() =>
+                            deleteHackathon(hackathon.id, hackathon.name)
+                          }
+                        >
+                          <Trash2 size={15} /> Delete
+                        </button>
                       )}
                     </>
                   )}

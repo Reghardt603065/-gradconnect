@@ -18,8 +18,21 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (!user) return jsonError("Unauthorized", 401);
   if (user.role !== "COMPANY") return jsonError("Only company accounts can manage projects.", 403);
   const { id } = await context.params;
-  const parsed = projectUpdateSchema.safeParse(await readJson(request));
-  if (!parsed.success) return jsonError("Invalid project update", 422, parsed.error.flatten());
+  const parsed = projectUpdateSchema.safeParse(
+    await readJson(request),
+  );
+
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0];
+    const field = firstIssue?.path.join(".");
+    const message = firstIssue?.message || "Invalid project update";
+
+    return jsonError(
+      field ? `${field}: ${message}` : message,
+      422,
+      parsed.error.flatten(),
+    );
+  }
 
   try {
     return jsonSuccess(await updateProjectForUser(user.id, id, parsed.data));

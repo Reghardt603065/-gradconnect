@@ -1,43 +1,68 @@
 import { redirect } from "next/navigation";
+
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { PageHeader } from "@/components/page-header";
 import { HackathonBrowser } from "@/components/hackathon-browser";
+import { PageHeader } from "@/components/page-header";
 import { discoverSouthAfricaHackathons } from "@/lib/hackathon-sources/devpost";
+import { prisma } from "@/lib/prisma";
 
 export default async function HackathonsPage() {
   const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
 
   const [rows, discovered] = await Promise.all([
     prisma.hackathon.findMany({
       include: {
-        participants: { where: { userId: session.user.id }, select: { id: true } },
-        _count: { select: { participants: true, teams: true } },
+        participants: {
+          where: {
+            userId: session.user.id,
+          },
+          select: {
+            id: true,
+          },
+        },
+        _count: {
+          select: {
+            participants: true,
+            teams: true,
+          },
+        },
       },
-      orderBy: { startDate: "asc" },
+      orderBy: {
+        startDate: "asc",
+      },
     }),
     discoverSouthAfricaHackathons(),
   ]);
 
-  const community = rows.map((h) => ({
-    id: h.id,
-    name: h.name,
-    description: h.description,
-    location: h.location,
-    mode: h.mode,
-    startDate: h.startDate.toISOString(),
-    endDate: h.endDate.toISOString(),
-    registrationDeadline: h.registrationDeadline?.toISOString() || null,
-    websiteUrl: h.websiteUrl,
-    technologies: h.technologies,
-    source: h.source,
-    joined: h.participants.length > 0,
-    participants: h._count.participants,
-    teams: h._count.teams,
+  const publicHackathons = discovered.map((hackathon) => ({
+    ...hackathon,
+    canDelete: false,
+  }));
+
+  const communityHackathons = rows.map((hackathon) => ({
+    id: hackathon.id,
+    name: hackathon.name,
+    description: hackathon.description,
+    location: hackathon.location,
+    mode: hackathon.mode,
+    startDate: hackathon.startDate.toISOString(),
+    endDate: hackathon.endDate.toISOString(),
+    registrationDeadline:
+      hackathon.registrationDeadline?.toISOString() || null,
+    websiteUrl: hackathon.websiteUrl,
+    technologies: hackathon.technologies,
+    source: hackathon.source,
+    joined: hackathon.participants.length > 0,
+    participants: hackathon._count.participants,
+    teams: hackathon._count.teams,
     external: false as const,
     dateLabel: null,
     availabilityLabel: "GradConnect community",
+    canDelete: hackathon.createdById === session.user.id,
   }));
 
   return (
@@ -46,7 +71,10 @@ export default async function HackathonsPage() {
         title="Hackathons"
         description="Discover current hackathons in South Africa, join GradConnect events, build a team, or create your own South African event."
       />
-      <HackathonBrowser initial={[...discovered, ...community]} />
+
+      <HackathonBrowser
+        initial={[...publicHackathons, ...communityHackathons]}
+      />
     </>
   );
 }

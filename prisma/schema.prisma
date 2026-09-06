@@ -89,6 +89,9 @@ enum ActivityType {
   PROJECT_ADDED
   GITHUB_SYNCED
   GOAL_UPDATED
+  CODING_CHALLENGE_COMPLETED
+  BADGE_EARNED
+  TEAM_UPDATED
 }
 
 model User {
@@ -113,6 +116,7 @@ model User {
   applications           JobApplication[]
   portfolioProjects      PortfolioProject[]
   hackathonParticipations HackathonParticipant[]
+  hackathonsCreated       Hackathon[]             @relation("HackathonCreator")
   teamsCreated           Team[]                   @relation("TeamCreator")
   teamMemberships        TeamMember[]
   peerLinksRequested     PeerLink[]               @relation("PeerRequester")
@@ -126,6 +130,9 @@ model User {
   notificationPreference NotificationPreference?
   company                Company?                  @relation("CompanyOwner")
   projectSubscriptions   ProjectSubscription[]
+  profileImage           ProfileImage?
+  badges                 UserBadge[]
+  challengeCompletions   CodingChallengeCompletion[]
 
   @@index([username])
   @@index([createdAt])
@@ -214,6 +221,7 @@ model Certification {
 
 model Hackathon {
   id                   String                  @id @default(uuid())
+  createdById          String?
   name                 String
   description          String
   location             String?
@@ -226,9 +234,11 @@ model Hackathon {
   source               String                  @default("GradConnect")
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
+  createdBy            User?                   @relation("HackathonCreator", fields: [createdById], references: [id], onDelete: SetNull)
   participants         HackathonParticipant[]
   teams                Team[]
 
+  @@index([createdById])
   @@index([startDate])
 }
 
@@ -324,9 +334,61 @@ model PortfolioProject {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attachments  PortfolioAttachment[]
 
   @@unique([userId, slug])
   @@index([userId, featured])
+}
+
+
+model ProfileImage {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  mimeType  String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+}
+
+model PortfolioAttachment {
+  id        String           @id @default(uuid())
+  projectId String
+  fileName  String
+  mimeType  String
+  size      Int
+  data      Bytes
+  createdAt DateTime         @default(now())
+  project   PortfolioProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model UserBadge {
+  id          String   @id @default(uuid())
+  userId      String
+  code        String
+  name        String
+  description String
+  awardedAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, code])
+  @@index([userId, awardedAt])
+}
+
+model CodingChallengeCompletion {
+  id           String   @id @default(uuid())
+  userId       String
+  challengeKey String
+  notes        String?
+  completedAt  DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, challengeKey])
+  @@index([userId, completedAt])
 }
 
 model Message {

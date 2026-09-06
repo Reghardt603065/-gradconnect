@@ -36,6 +36,11 @@ export default async function FriendsPage({
           location: true,
           skills: true,
           image: true,
+          profileImage: {
+            select: {
+              id: true,
+            },
+          },
           role: true,
           _count: {
             select: {
@@ -55,6 +60,11 @@ export default async function FriendsPage({
           location: true,
           skills: true,
           image: true,
+          profileImage: {
+            select: {
+              id: true,
+            },
+          },
           role: true,
           _count: {
             select: {
@@ -138,9 +148,13 @@ export default async function FriendsPage({
                 <div
                   className="profile-avatar friend-avatar"
                   style={
-                    person.image
+                    person.profileImage || person.image
                       ? {
-                          backgroundImage: `url(${person.image})`,
+                          backgroundImage: `url(${
+                            person.profileImage
+                              ? `/api/profile-images/${person.id}`
+                              : person.image
+                          })`,
                           backgroundSize: "cover",
                           backgroundPosition: "center",
                           color: "transparent",

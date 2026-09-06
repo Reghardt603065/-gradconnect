@@ -13,8 +13,21 @@ export async function POST(request: Request) {
   if (!user) return jsonError("Unauthorized", 401);
   if (user.role !== "COMPANY") return jsonError("Only company accounts can post projects.", 403);
 
-  const parsed = companyProjectSchema.safeParse(await readJson(request));
-  if (!parsed.success) return jsonError("Invalid project details", 422, parsed.error.flatten());
+  const parsed = companyProjectSchema.safeParse(
+    await readJson(request),
+  );
+
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0];
+    const field = firstIssue?.path.join(".");
+    const message = firstIssue?.message || "Invalid project details";
+
+    return jsonError(
+      field ? `${field}: ${message}` : message,
+      422,
+      parsed.error.flatten(),
+    );
+  }
 
   try {
     return jsonSuccess(await createProjectForUser(user.id, parsed.data), 201);

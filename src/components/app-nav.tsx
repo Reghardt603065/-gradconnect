@@ -4,19 +4,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
-  LayoutDashboard,
-  BriefcaseBusiness,
-  ListChecks,
   Award,
-  Trophy,
-  FolderKanban,
-  Users,
-  MessageCircle,
   Bell,
-  UserRound,
-  Settings,
+  BriefcaseBusiness,
   Building2,
   Code2,
+  Flame,
+  FolderKanban,
+  LayoutDashboard,
+  ListChecks,
+  MessageCircle,
+  Settings,
+  Trophy,
+  UserRound,
+  Users,
 } from "lucide-react";
 
 type Role = "GRADUATE" | "COMPANY" | "ADMIN";
@@ -27,8 +28,10 @@ const graduateLinks: readonly NavItem[] = [
   ["/jobs", "Jobs", BriefcaseBusiness],
   ["/applications", "Applications", ListChecks],
   ["/certifications", "Certifications", Award],
+  ["/growth", "Growth", Flame],
   ["/projects", "Projects", Code2],
   ["/hackathons", "Hackathons", Trophy],
+  ["/teams", "Teams", Users],
   ["/portfolio", "Portfolio", FolderKanban],
   ["/friends", "Friends", Users],
   ["/peers", "Peers & goals", Users],
@@ -46,26 +49,47 @@ const companyLinks: readonly NavItem[] = [
   ["/settings", "Settings", Settings],
 ];
 
-export function AppNav({ role }: { role: Role }) {
+type AppNavProps = {
+  role: Role;
+  unreadNotifications?: number;
+};
+
+export function AppNav({
+  role,
+  unreadNotifications = 0,
+}: AppNavProps) {
   const pathname = usePathname();
   const links = role === "COMPANY" ? companyLinks : graduateLinks;
 
   return (
     <nav className="nav-list" aria-label="Main navigation">
-      {links.map(([href, label, Icon]) => (
-        <Link
-          key={href}
-          href={href}
-          className={`nav-link ${
-            pathname === href || pathname.startsWith(`${href}/`)
-              ? "active"
-              : ""
-          }`}
-        >
-          <Icon size={18} />
-          {label}
-        </Link>
-      ))}
+      {links.map(([href, label, Icon]) => {
+        const active =
+          pathname === href || pathname.startsWith(`${href}/`);
+        const showNotificationCount =
+          href === "/notifications" && unreadNotifications > 0;
+
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={`nav-link ${active ? "active" : ""}`}
+          >
+            <Icon size={18} />
+
+            <span className="nav-link-label">{label}</span>
+
+            {showNotificationCount && (
+              <span
+                className="notification-count notification-count-nav"
+                aria-label={`${unreadNotifications} unread notifications`}
+              >
+                {unreadNotifications > 99 ? "99+" : unreadNotifications}
+              </span>
+            )}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

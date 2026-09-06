@@ -21,8 +21,10 @@ type ProjectFormData = {
 
 export function ProjectForm({
   initial,
+  defaultContactEmail = "",
 }: {
   initial?: ProjectFormData;
+  defaultContactEmail?: string;
 }) {
   const router = useRouter();
 
@@ -137,6 +139,8 @@ export function ProjectForm({
           <input
             className="input"
             name="title"
+            minLength={3}
+            maxLength={160}
             defaultValue={
               initial?.title || ""
             }
@@ -150,6 +154,8 @@ export function ProjectForm({
           <input
             className="input"
             name="category"
+            minLength={2}
+            maxLength={80}
             defaultValue={
               initial?.category || ""
             }
@@ -165,6 +171,8 @@ export function ProjectForm({
         <textarea
           className="textarea"
           name="summary"
+          minLength={10}
+          maxLength={500}
           defaultValue={
             initial?.summary || ""
           }
@@ -179,6 +187,8 @@ export function ProjectForm({
         <textarea
           className="textarea"
           name="description"
+          minLength={10}
+          maxLength={4000}
           defaultValue={
             initial?.description || ""
           }
@@ -192,6 +202,8 @@ export function ProjectForm({
         <textarea
           className="textarea"
           name="requirements"
+          minLength={3}
+          maxLength={3000}
           defaultValue={
             initial?.requirements || ""
           }
@@ -206,6 +218,7 @@ export function ProjectForm({
         <textarea
           className="textarea"
           name="expectedOutcome"
+          maxLength={2000}
           defaultValue={
             initial?.expectedOutcome || ""
           }
@@ -240,7 +253,8 @@ export function ProjectForm({
             name="contactEmail"
             type="email"
             defaultValue={
-              initial?.contactEmail || ""
+              initial?.contactEmail ||
+              defaultContactEmail
             }
             required
           />

@@ -11,6 +11,7 @@ import { fetchPNetJobs } from "./pnet";
 import { jobCanonicalKey, sourceExternalKey } from "./dedupe";
 import { inferItCategory, isItJob } from "./taxonomy";
 import type { JobSourceResult, NormalizedJob } from "./types";
+import { notifyUsersAboutNewJobs } from "@/services/job-notification-service";
 
 export const JOB_REFRESH_MARKER = "GradConnect SA IT marketplace v7-pnet-mix";
 
@@ -149,6 +150,7 @@ export async function ingestJobs() {
   // by two boards is accepted only once.
   const acceptedCanonical = new Set(existingCanonical);
   const summary = [];
+  const newlyImportedJobs: NormalizedJob[] = [];
 
   for (const sourceResult of sourceResults) {
     let invalid = 0;
@@ -217,6 +219,10 @@ export async function ingestJobs() {
         inserted = created.count;
         failed += Math.max(0, sanitized.length - created.count);
 
+        if (created.count > 0) {
+          newlyImportedJobs.push(...sanitized.slice(0, created.count));
+        }
+
         for (const job of sanitized) {
           existingSourceIds.add(sourceExternalKey(job.source, job.externalId));
         }
@@ -256,6 +262,8 @@ export async function ingestJobs() {
       warning: sourceResult.error,
     });
   }
+
+  await notifyUsersAboutNewJobs(newlyImportedJobs);
 
   await prisma.jobFetchLog.create({
     data: {

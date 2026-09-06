@@ -26,6 +26,6 @@ export default async function CreateProjectPage() {
     <PageHeader
       title="Post a project"
       description={`Create a real-world project opportunity for students on behalf of ${company.name}.`} />
-    <ProjectForm />
+    <ProjectForm defaultContactEmail={company.email} />
   </>;
 }

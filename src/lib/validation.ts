@@ -7,6 +7,22 @@ const optionalUrl = z
   .or(z.literal(""))
   .transform((value) => value || undefined);
 
+const imageDataUrl = z
+  .string()
+  .max(3_000_000)
+  .regex(
+    /^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/,
+    "Invalid image data",
+  );
+
+const optionalImage = z
+  .union([
+    z.string().trim().url(),
+    imageDataUrl,
+    z.literal(""),
+  ])
+  .transform((value) => value || undefined);
+
 export const registerSchema = z.object({
   accountType: z.enum(["GRADUATE", "COMPANY"]).default("GRADUATE"),
   name: z.string().trim().min(2).max(80),
@@ -44,7 +60,6 @@ export const profileSchema = z.object({
   skills: z.array(z.string().trim().min(1).max(40)).max(30).default([]),
   githubUsername: z.string().trim().max(80).optional().default(""),
   linkedinUrl: optionalUrl,
-  image: optionalUrl,
 });
 
 export const certificationSchema = z.object({
@@ -64,8 +79,19 @@ export const portfolioProjectSchema = z.object({
   technologies: z.array(z.string().trim().min(1).max(40)).max(30).default([]),
   githubUrl: optionalUrl,
   liveUrl: optionalUrl,
-  imageUrl: optionalUrl,
+  imageUrl: optionalImage,
   featured: z.boolean().default(false),
+});
+
+
+export const portfolioProjectUpdateSchema = z.object({
+  title: z.string().trim().min(2).max(120).optional(),
+  description: z.string().trim().min(10).max(1500).optional(),
+  technologies: z.array(z.string().trim().min(1).max(40)).max(30).optional(),
+  githubUrl: optionalUrl.optional(),
+  liveUrl: optionalUrl.optional(),
+  imageUrl: optionalImage.optional(),
+  featured: z.boolean().optional(),
 });
 
 export const applicationSchema = z.object({
@@ -158,4 +184,23 @@ export const projectUpdateSchema = companyProjectSchema.partial().extend({
 
 export const projectSubscriptionSchema = z.object({
   action: z.enum(["subscribe", "withdraw"]),
+});
+
+
+export const teamWorkspaceSchema = z.object({
+  repositoryUrl: optionalUrl,
+  notes: z.string().trim().max(5000).default(""),
+  tasks: z.array(
+    z.object({
+      id: z.string().trim().min(1).max(80),
+      title: z.string().trim().min(1).max(160),
+      done: z.boolean().default(false),
+      assigneeId: z.string().uuid().nullable().optional(),
+    }),
+  ).max(50).default([]),
+});
+
+export const challengeCompletionSchema = z.object({
+  challengeKey: z.string().trim().min(1).max(80),
+  notes: z.string().trim().max(1000).optional().default(""),
 });

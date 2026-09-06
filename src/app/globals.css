@@ -332,3 +332,157 @@ img { max-width: 100%; }
 
 @media (max-width:1100px) { .friends-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:600px) { .friends-grid { grid-template-columns:1fr; } .friend-profile-hero { grid-template-columns:1fr; } }
+
+/* --- Milestone completion features ------------------------------------- */
+.auth-divider {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:18px 0;
+  color:var(--muted);
+  font-size:.8rem;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content:"";
+  flex:1;
+  height:1px;
+  background:var(--line);
+}
+
+.checkbox-row {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:42px;
+  color:#475467;
+  font-size:.88rem;
+}
+.checkbox-row input { width:16px; height:16px; }
+
+.certification-filter-grid {
+  display:grid;
+  grid-template-columns:2fr repeat(3,minmax(150px,1fr));
+  gap:10px;
+  align-items:end;
+}
+
+.portfolio-cover {
+  width:100%;
+  aspect-ratio:16 / 9;
+  object-fit:cover;
+  border-radius:12px;
+  border:1px solid var(--line);
+  margin-bottom:14px;
+  background:#f8fafc;
+}
+
+.peer-progress-summary {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+.peer-progress-summary > div {
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:10px;
+  background:#fafbfc;
+}
+.peer-progress-summary strong {
+  display:block;
+  color:var(--navy);
+  font-size:1.15rem;
+}
+.peer-progress-summary span {
+  color:var(--muted);
+  font-size:.75rem;
+}
+
+.dashboard-metrics,
+.dashboard-sections { margin-top:18px; }
+.dashboard-insight {
+  text-decoration:none;
+  color:inherit;
+}
+.dashboard-insight:hover strong { color:var(--gold-dark,#8a6b25); }
+.dashboard-insight svg { flex:0 0 auto; color:var(--muted); }
+.dashboard-card-link { margin-top:14px; }
+.compact-empty { padding:24px 8px; }
+
+.team-workspace-grid {
+  display:grid;
+  grid-template-columns:minmax(0,1.5fr) minmax(280px,.75fr);
+  gap:18px;
+  align-items:start;
+}
+.workspace-task {
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) minmax(120px,.45fr) auto;
+  gap:10px;
+  align-items:center;
+  padding:10px 0;
+  border-bottom:1px solid var(--line);
+}
+.workspace-task:last-child { border-bottom:0; }
+.workspace-task.done .workspace-task-title {
+  text-decoration:line-through;
+  color:var(--muted);
+}
+.workspace-member {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:10px 0;
+  border-bottom:1px solid var(--line);
+}
+.workspace-member:last-child { border-bottom:0; }
+
+@media (max-width:900px) {
+  .certification-filter-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .team-workspace-grid { grid-template-columns:1fr; }
+}
+
+@media (max-width:600px) {
+  .certification-filter-grid { grid-template-columns:1fr; }
+  .peer-progress-summary { grid-template-columns:1fr; }
+  .workspace-task { grid-template-columns:auto minmax(0,1fr) auto; }
+  .workspace-task select { grid-column:2 / -1; }
+}
+
+/* --- Notification indicators ------------------------------------------ */
+.nav-link-label {
+  flex: 1;
+}
+
+.notification-bell {
+  position: relative;
+}
+
+.notification-count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--danger);
+  color: #fff;
+  font-size: .68rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.notification-count-nav {
+  margin-left: auto;
+  box-shadow: none;
+}
+
+.notification-count-bell {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+}

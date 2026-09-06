@@ -1,14 +1,24 @@
 import { prisma } from "@/lib/prisma";
-import { jsonError, jsonSuccess, readJson, requireApiUser } from "@/lib/api";
+import {
+  jsonError,
+  jsonSuccess,
+  readJson,
+  requireApiUser,
+} from "@/lib/api";
 import { profileSchema } from "@/lib/validation";
 import { recordActivity } from "@/lib/activity";
 
 export async function GET() {
   const sessionUser = await requireApiUser();
-  if (!sessionUser) return jsonError("Unauthorized", 401);
+
+  if (!sessionUser) {
+    return jsonError("Unauthorized", 401);
+  }
 
   const user = await prisma.user.findUnique({
-    where: { id: sessionUser.id },
+    where: {
+      id: sessionUser.id,
+    },
     select: {
       id: true,
       name: true,
@@ -25,24 +35,42 @@ export async function GET() {
       role: true,
     },
   });
+
   return jsonSuccess(user);
 }
 
 export async function PATCH(request: Request) {
   const sessionUser = await requireApiUser();
-  if (!sessionUser) return jsonError("Unauthorized", 401);
+
+  if (!sessionUser) {
+    return jsonError("Unauthorized", 401);
+  }
 
   const body = await readJson(request);
   const parsed = profileSchema.safeParse(body);
-  if (!parsed.success) return jsonError("Invalid profile data", 422, parsed.error.flatten());
 
-  const usernameOwner = await prisma.user.findUnique({ where: { username: parsed.data.username } });
+  if (!parsed.success) {
+    return jsonError(
+      "Invalid profile data",
+      422,
+      parsed.error.flatten(),
+    );
+  }
+
+  const usernameOwner = await prisma.user.findUnique({
+    where: {
+      username: parsed.data.username,
+    },
+  });
+
   if (usernameOwner && usernameOwner.id !== sessionUser.id) {
     return jsonError("That username is already taken", 409);
   }
 
   const user = await prisma.user.update({
-    where: { id: sessionUser.id },
+    where: {
+      id: sessionUser.id,
+    },
     data: {
       name: parsed.data.name,
       username: parsed.data.username,
@@ -52,7 +80,6 @@ export async function PATCH(request: Request) {
       skills: parsed.data.skills,
       githubUsername: parsed.data.githubUsername || null,
       linkedinUrl: parsed.data.linkedinUrl || null,
-      image: parsed.data.image || null,
     },
     select: {
       id: true,
@@ -69,14 +96,29 @@ export async function PATCH(request: Request) {
     },
   });
 
-  await recordActivity(sessionUser.id, "PROFILE_UPDATED", "Updated profile information");
+  await recordActivity(
+    sessionUser.id,
+    "PROFILE_UPDATED",
+    "Updated profile information",
+  );
+
   return jsonSuccess(user);
 }
 
 export async function DELETE() {
   const sessionUser = await requireApiUser();
-  if (!sessionUser) return jsonError("Unauthorized", 401);
 
-  await prisma.user.delete({ where: { id: sessionUser.id } });
-  return jsonSuccess({ deleted: true });
+  if (!sessionUser) {
+    return jsonError("Unauthorized", 401);
+  }
+
+  await prisma.user.delete({
+    where: {
+      id: sessionUser.id,
+    },
+  });
+
+  return jsonSuccess({
+    deleted: true,
+  });
 }

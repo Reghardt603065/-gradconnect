@@ -47,6 +47,7 @@ export async function POST(request: Request) {
       websiteUrl: data.websiteUrl || null,
       technologies: data.technologies,
       source: "GradConnect Community",
+      createdById: sessionUser.id,
     },
   });
 
