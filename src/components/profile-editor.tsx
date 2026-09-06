@@ -236,8 +236,7 @@ export function ProfileEditor({
       </div>
 
       <form
-        className="card form-stack"
-        style={{ gridColumn: "span 2" }}
+        className="card form-stack grid-span-2"
         onSubmit={save}
       >
         <h2>Edit profile</h2>

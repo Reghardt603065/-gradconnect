@@ -1,14 +1,15 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { GrowthCenter } from "@/components/growth-center";
+import { PageHeader } from "@/components/page-header";
 import {
   getChallengeCompletionKey,
   getTodayChallenge,
 } from "@/lib/coding-challenges";
-import { PageHeader } from "@/components/page-header";
-import { GrowthCenter } from "@/components/growth-center";
+import { prisma } from "@/lib/prisma";
 import {
+  getBadgeProgress,
   getChallengeCompletionCount,
   getUserBadges,
   syncUserBadges,
@@ -56,17 +57,19 @@ export default async function GrowthPage() {
 
   await syncUserBadges(userId);
 
-  const [completion, completionCount, badges] = await Promise.all([
-    getTodayCompletion(userId, challengeKey),
-    getChallengeCompletionCount(userId),
-    getUserBadges(userId),
-  ]);
+  const [completion, completionCount, badges, badgeProgress] =
+    await Promise.all([
+      getTodayCompletion(userId, challengeKey),
+      getChallengeCompletionCount(userId),
+      getUserBadges(userId),
+      getBadgeProgress(userId),
+    ]);
 
   return (
     <>
       <PageHeader
         title="Growth"
-        description="Keep technical skills active with a daily challenge and career achievements."
+        description="Keep technical skills active with a daily challenge and track exactly what is left before each badge unlocks."
       />
 
       <GrowthCenter
@@ -78,6 +81,7 @@ export default async function GrowthPage() {
           ...badge,
           awardedAt: badge.awardedAt.toISOString(),
         }))}
+        badgeProgress={badgeProgress}
       />
     </>
   );

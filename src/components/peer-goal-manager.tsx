@@ -389,7 +389,7 @@ export function PeerGoalManager({
           <button className="btn btn-primary">Create goal</button>
         </form>
 
-        <div className="grid" style={{ gridColumn: "span 2" }}>
+        <div className="grid grid-span-2">
           {goals.length ? (
             goals.map((goal) => (
               <article className="card" key={goal.id}>

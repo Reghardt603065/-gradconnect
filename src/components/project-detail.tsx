@@ -185,12 +185,7 @@ export function ProjectDetail({
       )}
 
       <div className="grid grid-3">
-        <div
-          className="card"
-          style={{
-            gridColumn: "span 2",
-          }}
-        >
+        <div className="card grid-span-2">
           <h2>Project overview</h2>
 
           <h3>Description</h3>

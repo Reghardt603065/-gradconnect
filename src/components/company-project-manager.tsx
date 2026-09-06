@@ -85,15 +85,7 @@ export function CompanyProjectManager({
         className="card"
         style={{ marginBottom: 18 }}
       >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "minmax(240px, 2fr) repeat(2, minmax(160px, 1fr))",
-            gap: 12,
-            alignItems: "end",
-          }}
-        >
+        <div className="company-project-filter-grid">
           <div className="field">
             <label htmlFor="company-project-search">
               Search

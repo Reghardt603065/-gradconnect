@@ -528,7 +528,7 @@ export function PortfolioManager({
           </div>
         </div>
 
-        <div className="grid" style={{ gridColumn: "span 2" }}>
+        <div className="grid grid-span-2">
           {items.length ? (
             items.map((item) => (
               <article className="card" key={item.id}>

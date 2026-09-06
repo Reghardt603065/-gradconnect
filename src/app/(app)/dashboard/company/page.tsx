@@ -117,14 +117,7 @@ export default async function CompanyDashboardPage() {
         }
       />
 
-      <section
-        className="grid"
-        style={{
-          gridTemplateColumns:
-            "repeat(4, minmax(0, 1fr))",
-          gap: 18,
-        }}
-      >
+      <section className="grid company-stat-grid">
         <article className="card stat-card">
           <div>
             <div className="stat-value">

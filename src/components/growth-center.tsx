@@ -1,9 +1,21 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { Award, CheckCircle2, Code2, Flame } from "lucide-react";
+import {
+  Award,
+  Check,
+  CheckCircle2,
+  Circle,
+  Code2,
+  Flame,
+  Lock,
+  Trophy,
+} from "lucide-react";
 
 import type { CodingChallenge } from "@/lib/coding-challenges";
+import type { BadgeProgress } from "@/services/badge-service";
 
 type Badge = {
   id: string;
@@ -19,6 +31,7 @@ type GrowthCenterProps = {
   completed: boolean;
   completionCount: number;
   badges: Badge[];
+  badgeProgress: BadgeProgress[];
 };
 
 export function GrowthCenter({
@@ -27,10 +40,26 @@ export function GrowthCenter({
   completed: initialCompleted,
   completionCount,
   badges,
+  badgeProgress,
 }: GrowthCenterProps) {
   const [completed, setCompleted] = useState(initialCompleted);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const router = useRouter();
+
+  const totalRequirements = badgeProgress.reduce(
+    (total, badge) => total + badge.totalRequirements,
+    0,
+  );
+
+  const completedRequirements = badgeProgress.reduce(
+    (total, badge) => total + badge.completedRequirements,
+    0,
+  );
+
+  const overallProgress = totalRequirements
+    ? Math.round((completedRequirements / totalRequirements) * 100)
+    : 0;
 
   async function completeChallenge(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -59,6 +88,7 @@ export function GrowthCenter({
 
     setCompleted(true);
     setMessage("Challenge completed. Nice work.");
+    router.refresh();
   }
 
   return (
@@ -136,7 +166,8 @@ export function GrowthCenter({
         <form className="card form-stack" onSubmit={completeChallenge}>
           <h2>Record your solution</h2>
           <p className="muted">
-            Solve the challenge in your editor, then record a short note about your approach.
+            Solve the challenge in your editor, then record a short note about
+            your approach.
           </p>
 
           {message && (
@@ -161,14 +192,135 @@ export function GrowthCenter({
             disabled={completed || saving}
           >
             <CheckCircle2 size={16} />
-            {completed ? "Completed today" : saving ? "Saving..." : "Mark challenge complete"}
+            {completed
+              ? "Completed today"
+              : saving
+                ? "Saving..."
+                : "Mark challenge complete"}
           </button>
         </form>
       </section>
 
       <section style={{ marginTop: 26 }}>
         <div className="section-heading">
-          <h2>Achievements</h2>
+          <div>
+            <h2>Badge checklist</h2>
+            <p className="muted" style={{ marginBottom: 0 }}>
+              Complete the checklist below to unlock every GradConnect badge.
+            </p>
+          </div>
+
+          <span className="badge gold">
+            {completedRequirements}/{totalRequirements} complete
+          </span>
+        </div>
+
+        <article className="card" style={{ marginBottom: 18 }}>
+          <div className="list-item">
+            <div>
+              <strong>Overall badge progress</strong>
+              <p className="muted" style={{ marginBottom: 0 }}>
+                {badgeProgress.filter((badge) => badge.unlocked).length} of {badgeProgress.length} badges unlocked
+              </p>
+            </div>
+            <strong>{overallProgress}%</strong>
+          </div>
+
+          <div className="progress" style={{ marginTop: 12 }}>
+            <span style={{ width: `${overallProgress}%` }} />
+          </div>
+        </article>
+
+        {badgeProgress.length ? (
+          <div className="grid grid-2 badge-checklist-grid">
+            {badgeProgress.map((badge) => {
+              const badgePercent = badge.totalRequirements
+                ? Math.round(
+                    (badge.completedRequirements / badge.totalRequirements) * 100,
+                  )
+                : 0;
+
+              return (
+                <article
+                  className={`card badge-progress-card ${badge.unlocked ? "badge-progress-unlocked" : ""}`}
+                  key={badge.code}
+                >
+                  <div className="list-item badge-progress-heading">
+                    <div className="badge-progress-title">
+                      <span className="icon-box">
+                        {badge.unlocked ? (
+                          <Trophy size={20} />
+                        ) : (
+                          <Lock size={20} />
+                        )}
+                      </span>
+
+                      <div>
+                        <h3>{badge.name}</h3>
+                        <p className="muted">{badge.description}</p>
+                      </div>
+                    </div>
+
+                    <span className={`badge ${badge.unlocked ? "green" : ""}`}>
+                      {badge.unlocked ? "Unlocked" : `${badgePercent}%`}
+                    </span>
+                  </div>
+
+                  <div className="progress badge-progress-bar">
+                    <span style={{ width: `${badgePercent}%` }} />
+                  </div>
+
+                  <div className="badge-requirements">
+                    {badge.requirements.map((requirement) => (
+                      <div
+                        className={`badge-requirement ${requirement.complete ? "complete" : ""}`}
+                        key={requirement.label}
+                      >
+                        <span className="badge-requirement-icon">
+                          {requirement.complete ? (
+                            <Check size={16} />
+                          ) : (
+                            <Circle size={16} />
+                          )}
+                        </span>
+
+                        <span>{requirement.label}</span>
+
+                        <span className="badge-requirement-actions">
+                          {typeof requirement.current === "number" &&
+                            typeof requirement.target === "number" && (
+                              <span className="badge-requirement-count">
+                                {requirement.current}/{requirement.target}
+                              </span>
+                            )}
+
+                          {!requirement.complete && (
+                            <Link
+                              href={requirement.href}
+                              className="link badge-requirement-link"
+                            >
+                              Open
+                            </Link>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="card empty">
+            Badge progress will appear after the latest Prisma migration has
+            been generated and deployed.
+          </div>
+        )}
+      </section>
+
+      <section style={{ marginTop: 26 }}>
+        <div className="section-heading">
+          <h2>Unlocked achievements</h2>
         </div>
 
         {badges.length ? (
@@ -188,7 +340,7 @@ export function GrowthCenter({
           </div>
         ) : (
           <div className="card empty">
-            Complete profile, learning, project and collaboration milestones to earn badges.
+            Complete the checklist above to unlock your first badge.
           </div>
         )}
       </section>
