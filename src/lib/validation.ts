@@ -204,3 +204,19 @@ export const challengeCompletionSchema = z.object({
   challengeKey: z.string().trim().min(1).max(80),
   notes: z.string().trim().max(1000).optional().default(""),
 });
+
+export const hackathonCrawlTargetSchema = z.object({
+  url: z.string().trim().url().max(1000),
+  label: z.string().trim().max(120).optional().default(""),
+});
+
+export const hackathonCrawlImportSchema = z.object({
+  name: z.string().trim().min(2).max(200),
+  description: z.string().trim().max(4000).nullable().optional(),
+  start_date: z.string().trim().max(120).nullable().optional(),
+  end_date: z.string().trim().max(120).nullable().optional(),
+  location: z.string().trim().max(300).nullable().optional(),
+  mode: z.string().trim().max(80).nullable().optional(),
+  source_url: z.string().trim().url().max(2000),
+  target_url: z.string().trim().url().max(2000).nullable().optional(),
+});

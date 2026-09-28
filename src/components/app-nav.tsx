@@ -10,6 +10,7 @@ import {
   BriefcaseBusiness,
   Building2,
   Code2,
+  ClipboardCheck,
   Flame,
   FolderKanban,
   LayoutDashboard,
@@ -17,6 +18,7 @@ import {
   Menu,
   MessageCircle,
   Settings,
+  ShieldCheck,
   Trophy,
   UserRound,
   Users,
@@ -52,6 +54,12 @@ const companyLinks: readonly NavItem[] = [
   ["/settings", "Settings", Settings],
 ];
 
+const adminLinks: readonly NavItem[] = [
+  ...graduateLinks,
+  ["/admin/hackathon-approvals", "Hackathon approvals", ClipboardCheck],
+  ["/admin/hackathon-crawler", "Admin crawler", ShieldCheck],
+];
+
 type AppNavProps = {
   role: Role;
   unreadNotifications?: number;
@@ -64,7 +72,12 @@ export function AppNav({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const links = role === "COMPANY" ? companyLinks : graduateLinks;
+  const links =
+    role === "COMPANY"
+      ? companyLinks
+      : role === "ADMIN"
+        ? adminLinks
+        : graduateLinks;
 
   useEffect(() => {
     setMobileOpen(false);

@@ -6,9 +6,16 @@ import { useRouter } from "next/navigation";
 import {
   BriefcaseBusiness,
   GraduationCap,
+  ShieldCheck,
 } from "lucide-react";
 
-type AccountType = "GRADUATE" | "COMPANY";
+type AccountType = "GRADUATE" | "COMPANY" | "ADMIN";
+
+const accountLabels: Record<AccountType, string> = {
+  GRADUATE: "Graduate account",
+  COMPANY: "Company account",
+  ADMIN: "Admin account",
+};
 
 export function LoginForm() {
   const router = useRouter();
@@ -39,28 +46,32 @@ export function LoginForm() {
 
     const response = await fetch("/api/users/me");
     const body = await response.json();
-    const role = body?.data?.role;
+    const role = body?.data?.role as AccountType | undefined;
 
     setLoading(false);
 
-    if (role !== accountType) {
-      await signOut({
-        redirect: false,
-      });
+    if (!role) {
+      await signOut({ redirect: false });
+      setError("The account role could not be loaded. Please try again.");
+      return;
+    }
 
+    if (role !== accountType) {
+      await signOut({ redirect: false });
       setError(
-        accountType === "COMPANY"
-          ? "This email is registered as a graduate account. Choose Graduate account."
-          : "This email is registered as a company account. Choose Company account.",
+        `This email is registered as ${accountLabels[role].toLowerCase()}. Choose ${accountLabels[role]}.`,
       );
       return;
     }
 
-    router.push(
-      role === "COMPANY"
-        ? "/dashboard/company"
-        : "/dashboard",
-    );
+    if (role === "ADMIN") {
+      router.push("/admin/hackathon-crawler");
+    } else if (role === "COMPANY") {
+      router.push("/dashboard/company");
+    } else {
+      router.push("/dashboard");
+    }
+
     router.refresh();
   }
 
@@ -71,13 +82,17 @@ export function LoginForm() {
       <div className="field">
         <label>Account type</label>
 
-        <div className="grid grid-2" style={{ gap: 10 }}>
+        <div
+          className="grid"
+          style={{
+            gap: 10,
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          }}
+        >
           <button
             type="button"
             className={`card account-choice ${
-              accountType === "GRADUATE"
-                ? "active"
-                : ""
+              accountType === "GRADUATE" ? "active" : ""
             }`}
             onClick={() => setAccountType("GRADUATE")}
             aria-pressed={accountType === "GRADUATE"}
@@ -92,9 +107,7 @@ export function LoginForm() {
           <button
             type="button"
             className={`card account-choice ${
-              accountType === "COMPANY"
-                ? "active"
-                : ""
+              accountType === "COMPANY" ? "active" : ""
             }`}
             onClick={() => setAccountType("COMPANY")}
             aria-pressed={accountType === "COMPANY"}
@@ -103,6 +116,21 @@ export function LoginForm() {
             <strong>Company account</strong>
             <span className="helper">
               Manage your company and project opportunities.
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className={`card account-choice ${
+              accountType === "ADMIN" ? "active" : ""
+            }`}
+            onClick={() => setAccountType("ADMIN")}
+            aria-pressed={accountType === "ADMIN"}
+          >
+            <ShieldCheck size={20} />
+            <strong>Admin account</strong>
+            <span className="helper">
+              Review crawler targets and discovered hackathons.
             </span>
           </button>
         </div>

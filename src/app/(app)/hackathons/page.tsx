@@ -1,24 +1,18 @@
-import { redirect } from "next/navigation";
-
-import { auth } from "@/auth";
 import { HackathonBrowser } from "@/components/hackathon-browser";
 import { PageHeader } from "@/components/page-header";
 import { discoverSouthAfricaHackathons } from "@/lib/hackathon-sources/devpost";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth-user";
 
 export default async function HackathonsPage() {
-  const session = await auth();
+  const user = await requireUser();
 
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
-
-  const [rows, discovered] = await Promise.all([
+  const [rows, discovered, submissions] = await Promise.all([
     prisma.hackathon.findMany({
       include: {
         participants: {
           where: {
-            userId: session.user.id,
+            userId: user.id,
           },
           select: {
             id: true,
@@ -36,6 +30,23 @@ export default async function HackathonsPage() {
       },
     }),
     discoverSouthAfricaHackathons(),
+    prisma.hackathonSubmission.findMany({
+      where: {
+        submittedById: user.id,
+      },
+      orderBy: {
+        submittedAt: "desc",
+      },
+      take: 20,
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        submittedAt: true,
+        reviewedAt: true,
+        publishedHackathonId: true,
+      },
+    }),
   ]);
 
   const publicHackathons = discovered.map((hackathon) => ({
@@ -62,18 +73,27 @@ export default async function HackathonsPage() {
     external: false as const,
     dateLabel: null,
     availabilityLabel: "GradConnect community",
-    canDelete: hackathon.createdById === session.user.id,
+    canDelete: hackathon.createdById === user.id,
   }));
 
   return (
     <>
       <PageHeader
         title="Hackathons"
-        description="Discover current hackathons in South Africa, join GradConnect events, build a team, or create your own South African event."
+        description="Discover current hackathons in South Africa, join GradConnect events, build a team, or submit your own event for admin approval."
       />
 
       <HackathonBrowser
         initial={[...publicHackathons, ...communityHackathons]}
+        isAdmin={user.role === "ADMIN"}
+        initialSubmissions={submissions.map((submission) => ({
+          id: submission.id,
+          name: submission.name,
+          status: submission.status,
+          submittedAt: submission.submittedAt.toISOString(),
+          reviewedAt: submission.reviewedAt?.toISOString() || null,
+          publishedHackathonId: submission.publishedHackathonId,
+        }))}
       />
     </>
   );

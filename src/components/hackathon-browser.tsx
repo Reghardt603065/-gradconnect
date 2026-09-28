@@ -44,6 +44,19 @@ type CreatedHackathon = Omit<
   "joined" | "participants" | "teams" | "external" | "dateLabel" | "availabilityLabel" | "canDelete"
 >;
 
+type HackathonSubmission = {
+  id: string;
+  name: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  submittedAt: string;
+  reviewedAt: string | null;
+  publishedHackathonId: string | null;
+};
+
+type CreateHackathonResult =
+  | { kind: "PUBLISHED"; hackathon: CreatedHackathon }
+  | { kind: "PENDING"; submission: HackathonSubmission };
+
 function splitTechnologies(value: FormDataEntryValue | null) {
   return String(value || "")
     .split(",")
@@ -51,8 +64,17 @@ function splitTechnologies(value: FormDataEntryValue | null) {
     .filter(Boolean);
 }
 
-export function HackathonBrowser({ initial }: { initial: Hack[] }) {
+export function HackathonBrowser({
+  initial,
+  initialSubmissions,
+  isAdmin,
+}: {
+  initial: Hack[];
+  initialSubmissions: HackathonSubmission[];
+  isAdmin: boolean;
+}) {
   const [items, setItems] = useState(initial);
+  const [submissions, setSubmissions] = useState(initialSubmissions);
   const [selected, setSelected] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [query, setQuery] = useState("");
@@ -125,16 +147,25 @@ export function HackathonBrowser({ initial }: { initial: Hack[] }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const body: ApiResponse<CreatedHackathon> = await response.json();
+    const body: ApiResponse<CreateHackathonResult> = await response.json();
 
     if (!response.ok || !body.data) {
-      setError(body.error || "Hackathon could not be created.");
+      setError(body.error || "Hackathon could not be submitted.");
       return;
     }
 
+    if (body.data.kind === "PENDING") {
+      setSubmissions((current) => [body.data!.submission, ...current]);
+      form.reset();
+      setShowCreate(false);
+      setMessage("Hackathon submitted for admin approval. It will only appear publicly after an admin approves it.");
+      return;
+    }
+
+    const created = body.data.hackathon;
     setItems((current) => {
       const next: Hack = {
-        ...body.data!,
+        ...created,
         joined: false,
         participants: 0,
         teams: 0,
@@ -151,9 +182,8 @@ export function HackathonBrowser({ initial }: { initial: Hack[] }) {
     });
     form.reset();
     setShowCreate(false);
-    setMessage("Hackathon created. It is now visible to GradConnect users.");
+    setMessage("Hackathon published.");
   }
-
 
   async function deleteHackathon(id: string, name: string) {
     const confirmed = window.confirm(
@@ -272,7 +302,7 @@ export function HackathonBrowser({ initial }: { initial: Hack[] }) {
             setError("");
           }}
         >
-          <Plus size={17} /> {showCreate ? "Close form" : "Create hackathon"}
+          <Plus size={17} /> {showCreate ? "Close form" : isAdmin ? "Create hackathon" : "Submit hackathon"}
         </button>
       </section>
 
@@ -283,9 +313,11 @@ export function HackathonBrowser({ initial }: { initial: Hack[] }) {
         <section className="card" style={{ marginBottom: 18 }}>
           <form className="form-stack" onSubmit={createHackathon}>
             <div>
-              <h2 style={{ marginBottom: 6 }}>Create a hackathon</h2>
+              <h2 style={{ marginBottom: 6 }}>{isAdmin ? "Create a hackathon" : "Submit a hackathon"}</h2>
               <p className="muted" style={{ margin: 0 }}>
-                Add a South African event directly to GradConnect. After saving, it appears in the list below for other users to join.
+                {isAdmin
+                  ? "Add a verified South African event directly to GradConnect."
+                  : "Submit a South African event for admin review. It will only appear publicly after an admin approves it."}
               </p>
             </div>
             <div className="form-row">
@@ -342,8 +374,54 @@ export function HackathonBrowser({ initial }: { initial: Hack[] }) {
                 <input className="input" name="websiteUrl" type="url" placeholder="https://..." />
               </div>
             </div>
-            <button className="btn btn-primary">Publish hackathon</button>
+            <button className="btn btn-primary">
+              {isAdmin ? "Publish hackathon" : "Submit for approval"}
+            </button>
           </form>
+        </section>
+      )}
+
+      {submissions.length > 0 && (
+        <section className="card" style={{ marginBottom: 18 }}>
+          <div style={{ marginBottom: 12 }}>
+            <h2 style={{ marginBottom: 6 }}>My hackathon submissions</h2>
+            <p className="muted" style={{ margin: 0 }}>
+              Student-created hackathons stay private until an admin approves them.
+            </p>
+          </div>
+          <div className="list">
+            {submissions.map((submission) => (
+              <div className="list-item" key={submission.id}>
+                <div>
+                  <strong>{submission.name}</strong>
+                  <div className="muted" style={{ marginTop: 4 }}>
+                    Submitted {new Date(submission.submittedAt).toLocaleDateString("en-ZA")}
+                  </div>
+                </div>
+                <div className="tags">
+                  <span
+                    className={
+                      submission.status === "APPROVED"
+                        ? "badge green"
+                        : submission.status === "REJECTED"
+                          ? "badge red"
+                          : "badge gold"
+                    }
+                  >
+                    {submission.status}
+                  </span>
+                  {submission.publishedHackathonId && (
+                    <a
+                      className="btn btn-secondary btn-small"
+                      href={`/hackathons#${submission.publishedHackathonId}`}
+                    >
+                      Published
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
@@ -361,7 +439,7 @@ export function HackathonBrowser({ initial }: { initial: Hack[] }) {
             const canJoin = !hackathon.external && !ended && !registrationClosed;
 
             return (
-              <article className="card" key={hackathon.id}>
+              <article className="card" id={hackathon.id} key={hackathon.id}>
                 <span className="icon-box"><Trophy size={21} /></span>
                 <div className="tags" style={{ marginTop: 14 }}>
                   <span className="badge gold">{hackathon.mode.replaceAll("_", " ")}</span>
@@ -465,11 +543,11 @@ export function HackathonBrowser({ initial }: { initial: Hack[] }) {
             <p>
               {items.length
                 ? "Try another search or switch back to All hackathons."
-                : "No South African live listings or GradConnect hackathons are available right now. You can create one above."}
+                : "No South African live listings or approved GradConnect hackathons are available right now. You can submit one above."}
             </p>
             {!items.length && (
               <button className="btn btn-primary" type="button" onClick={() => setShowCreate(true)}>
-                <Plus size={17} /> Create first hackathon
+                <Plus size={17} /> Submit first hackathon
               </button>
             )}
           </div>

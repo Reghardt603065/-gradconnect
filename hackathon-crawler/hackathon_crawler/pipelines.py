@@ -1,22 +1,33 @@
-# Scraped items get saved here.
-# The original crawler wrote directly to SQL Server. GradConnect already uses
-# Prisma/PostgreSQL, so this keeps the same pipeline idea but sends items to
-# the app's protected import API instead of creating a second DB connection.
 import json
-import os
+import logging
 from urllib import request as urllib_request
+
+from hackathon_crawler.config import get_gradconnect_api_url, get_import_token
+
+
+logger = logging.getLogger(__name__)
 
 
 class GradConnectApiPipeline:
-    def open_spider(self, spider):
-        self.api_url = os.getenv("GRADCONNECT_API_URL", "http://localhost:3000").rstrip("/")
-        self.token = os.getenv("HACKATHON_IMPORT_TOKEN", "")
-        if not self.token:
-            spider.logger.warning("HACKATHON_IMPORT_TOKEN is not configured; imports will fail")
+    """Send crawler output into GradConnect's staging/review API.
 
-    def process_item(self, item, spider):
+    This pipeline deliberately writes only to the staging table.
+    The Next.js admin review flow publishes an event to the live Hackathon
+    table only after an administrator approves it.
+    """
+
+    def open_spider(self):
+        self.api_url = get_gradconnect_api_url()
+        self.token = get_import_token()
+
+        if not self.token:
+            logger.warning(
+                "HACKATHON_IMPORT_TOKEN is not configured; staging imports will fail"
+            )
+
+    def process_item(self, item):
         payload = json.dumps(dict(item)).encode("utf-8")
-        req = urllib_request.Request(
+        api_request = urllib_request.Request(
             f"{self.api_url}/api/internal/hackathons/import",
             data=payload,
             method="POST",
@@ -25,10 +36,23 @@ class GradConnectApiPipeline:
                 "Authorization": f"Bearer {self.token}",
             },
         )
+
         try:
-            with urllib_request.urlopen(req, timeout=20) as response:
+            with urllib_request.urlopen(api_request, timeout=20) as response:
                 if response.status not in (200, 201):
-                    spider.logger.error("GradConnect import returned HTTP %s", response.status)
+                    logger.error(
+                        "GradConnect staging import returned HTTP %s",
+                        response.status,
+                    )
+                else:
+                    logger.info(
+                        "Staged crawler result: %s",
+                        item.get("name"),
+                    )
         except Exception as exc:
-            spider.logger.error("Failed to import hackathon into GradConnect: %s", exc)
+            logger.error(
+                "Failed to stage hackathon result in GradConnect: %s",
+                exc,
+            )
+
         return item

@@ -38,3 +38,20 @@ public/uploads/*
 
 # TypeScript incremental cache
 *.tsbuildinfo
+
+# Python crawler local runtime
+hackathon-crawler/.venv/
+hackathon-crawler/logs/
+hackathon-crawler/eggs/
+hackathon-crawler/dbs/
+hackathon-crawler/twisted/
+*.egg-info/
+__pycache__/
+*.pyc
+
+.env
+.env.local
+.env.*.local
+.venv/
+node_modules/
+.next/

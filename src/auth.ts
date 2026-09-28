@@ -168,17 +168,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         ).role ?? "GRADUATE";
       }
 
-      if ((!token.id || !token.role) && token.email) {
-        const dbUser = await prisma.user.findUnique({
-          where: {
-            email: token.email,
-          },
-        });
+      // Keep the JWT role synchronized with the database.
+      // This matters when an existing account is promoted to ADMIN.
+      const dbUser = token.id
+        ? await prisma.user.findUnique({
+            where: {
+              id: String(token.id),
+            },
+            select: {
+              id: true,
+              role: true,
+            },
+          })
+        : token.email
+          ? await prisma.user.findUnique({
+              where: {
+                email: token.email,
+              },
+              select: {
+                id: true,
+                role: true,
+              },
+            })
+          : null;
 
-        if (dbUser) {
-          token.id = dbUser.id;
-          token.role = dbUser.role;
-        }
+      if (dbUser) {
+        token.id = dbUser.id;
+        token.role = dbUser.role;
       }
 
       return token;

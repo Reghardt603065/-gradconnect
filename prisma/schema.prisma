@@ -79,6 +79,18 @@ enum ProjectSubscriptionStatus {
   WITHDRAWN
 }
 
+enum HackathonCrawlResultStatus {
+  NEW
+  REVIEWED
+  DISMISSED
+}
+
+enum HackathonSubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum ActivityType {
   PROFILE_UPDATED
   JOB_SAVED
@@ -117,6 +129,8 @@ model User {
   portfolioProjects      PortfolioProject[]
   hackathonParticipations HackathonParticipant[]
   hackathonsCreated       Hackathon[]             @relation("HackathonCreator")
+  hackathonSubmissions    HackathonSubmission[]   @relation("HackathonSubmissionSubmitter")
+  hackathonSubmissionReviews HackathonSubmission[] @relation("HackathonSubmissionReviewer")
   teamsCreated           Team[]                   @relation("TeamCreator")
   teamMemberships        TeamMember[]
   peerLinksRequested     PeerLink[]               @relation("PeerRequester")
@@ -237,9 +251,35 @@ model Hackathon {
   createdBy            User?                   @relation("HackathonCreator", fields: [createdById], references: [id], onDelete: SetNull)
   participants         HackathonParticipant[]
   teams                Team[]
+  submission           HackathonSubmission?
 
   @@index([createdById])
   @@index([startDate])
+}
+
+model HackathonSubmission {
+  id                   String                     @id @default(uuid())
+  submittedById        String
+  reviewedById         String?
+  publishedHackathonId String?                    @unique
+  name                 String
+  description          String
+  location             String?
+  mode                 String                     @default("ONLINE")
+  startDate            DateTime
+  endDate              DateTime
+  registrationDeadline DateTime?
+  websiteUrl           String?
+  technologies         String[]                   @default([])
+  status               HackathonSubmissionStatus @default(PENDING)
+  submittedAt          DateTime                   @default(now())
+  reviewedAt           DateTime?
+  submittedBy          User                       @relation("HackathonSubmissionSubmitter", fields: [submittedById], references: [id], onDelete: Cascade)
+  reviewedBy           User?                      @relation("HackathonSubmissionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  publishedHackathon   Hackathon?                 @relation(fields: [publishedHackathonId], references: [id], onDelete: SetNull)
+
+  @@index([status, submittedAt])
+  @@index([submittedById, status])
 }
 
 model HackathonParticipant {
@@ -550,4 +590,38 @@ model ProjectSubscription {
   @@index([projectId])
   @@index([studentId])
   @@index([status])
+}
+
+
+model HackathonCrawlTarget {
+  id        String   @id @default(uuid())
+  url       String   @unique
+  label     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  results   HackathonCrawlResult[]
+
+  @@index([active])
+}
+
+model HackathonCrawlResult {
+  id          String                      @id @default(uuid())
+  targetId    String?
+  name        String
+  description String?
+  startDate   String?
+  endDate     String?
+  location    String?
+  mode        String?
+  sourceUrl   String
+  status      HackathonCrawlResultStatus @default(NEW)
+  rawData     Json?
+  discoveredAt DateTime                  @default(now())
+  reviewedAt  DateTime?
+  target      HackathonCrawlTarget?      @relation(fields: [targetId], references: [id], onDelete: SetNull)
+
+  @@unique([sourceUrl, name])
+  @@index([status, discoveredAt])
+  @@index([targetId])
 }

@@ -5,6 +5,7 @@ import { hackathonSchema } from "@/lib/validation";
 export async function GET(request: Request) {
   const sessionUser = await requireApiUser();
   if (!sessionUser) return jsonError("Unauthorized", 401);
+
   const q = new URL(request.url).searchParams.get("q")?.trim() || "";
 
   const hackathons = await prisma.hackathon.findMany({
@@ -24,6 +25,7 @@ export async function GET(request: Request) {
     },
     orderBy: { startDate: "asc" },
   });
+
   return jsonSuccess(hackathons);
 }
 
@@ -32,24 +34,72 @@ export async function POST(request: Request) {
   if (!sessionUser) return jsonError("Unauthorized", 401);
 
   const parsed = hackathonSchema.safeParse(await readJson(request));
-  if (!parsed.success) return jsonError("Invalid hackathon", 422, parsed.error.flatten());
+  if (!parsed.success) {
+    return jsonError("Invalid hackathon", 422, parsed.error.flatten());
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: sessionUser.id },
+    select: { id: true, role: true },
+  });
+
+  if (!user) return jsonError("Unauthorized", 401);
 
   const data = parsed.data;
-  const hackathon = await prisma.hackathon.create({
+  const commonData = {
+    name: data.name,
+    description: data.description,
+    location: data.location || null,
+    mode: data.mode,
+    startDate: new Date(data.startDate),
+    endDate: new Date(data.endDate),
+    registrationDeadline: data.registrationDeadline
+      ? new Date(data.registrationDeadline)
+      : null,
+    websiteUrl: data.websiteUrl || null,
+    technologies: data.technologies,
+  };
+
+  // Admins may still add a verified event directly.
+  if (user.role === "ADMIN") {
+    const hackathon = await prisma.hackathon.create({
+      data: {
+        ...commonData,
+        source: "GradConnect Community",
+        createdById: user.id,
+      },
+    });
+
+    return jsonSuccess(
+      {
+        kind: "PUBLISHED" as const,
+        hackathon,
+      },
+      201,
+    );
+  }
+
+  // Normal users submit for approval instead of publishing directly.
+  const submission = await prisma.hackathonSubmission.create({
     data: {
-      name: data.name,
-      description: data.description,
-      location: data.location || null,
-      mode: data.mode,
-      startDate: new Date(data.startDate),
-      endDate: new Date(data.endDate),
-      registrationDeadline: data.registrationDeadline ? new Date(data.registrationDeadline) : null,
-      websiteUrl: data.websiteUrl || null,
-      technologies: data.technologies,
-      source: "GradConnect Community",
-      createdById: sessionUser.id,
+      ...commonData,
+      submittedById: user.id,
+    },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      submittedAt: true,
+      reviewedAt: true,
+      publishedHackathonId: true,
     },
   });
 
-  return jsonSuccess(hackathon, 201);
+  return jsonSuccess(
+    {
+      kind: "PENDING" as const,
+      submission,
+    },
+    202,
+  );
 }
