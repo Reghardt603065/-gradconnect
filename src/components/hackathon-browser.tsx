@@ -154,15 +154,17 @@ export function HackathonBrowser({
       return;
     }
 
-    if (body.data.kind === "PENDING") {
-      setSubmissions((current) => [body.data!.submission, ...current]);
+    const result = body.data;
+
+    if (result.kind === "PENDING") {
+      setSubmissions((current) => [result.submission, ...current]);
       form.reset();
       setShowCreate(false);
       setMessage("Hackathon submitted for admin approval. It will only appear publicly after an admin approves it.");
       return;
     }
 
-    const created = body.data.hackathon;
+    const created = result.hackathon;
     setItems((current) => {
       const next: Hack = {
         ...created,
