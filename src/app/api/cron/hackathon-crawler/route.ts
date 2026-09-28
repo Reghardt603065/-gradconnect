@@ -1,5 +1,5 @@
 import { jsonError, jsonSuccess } from "@/lib/api";
-import { scheduleHackathonCrawler } from "@/lib/hackathon-scrapyd";
+import { dispatchHackathonCrawler } from "@/lib/hackathon-github-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +18,10 @@ export async function GET(request: Request) {
     return jsonError("Unauthorized", 401);
   }
 
-  const result = await scheduleHackathonCrawler();
+  const result = await dispatchHackathonCrawler();
 
   if (!result.ok) {
-    // If no active targets exist, return success so the scheduled job does not
-    // look broken just because there is nothing to crawl yet.
+    // No active targets is a normal state, not a broken scheduled job.
     if (result.status === 422) {
       return jsonSuccess({
         scheduled: false,

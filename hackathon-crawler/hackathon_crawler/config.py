@@ -36,8 +36,8 @@ def _load_env_file(path: Path) -> None:
 def load_project_env() -> None:
     """Try the normal GradConnect locations for the root .env file.
 
-    Explicit process environment variables always win. This lets Scrapyd inherit
-    production values while still making the local Windows setup easy.
+    Explicit process environment variables always win. GitHub Actions supplies
+    production values directly, while the root .env keeps local testing easy.
     """
     candidates: list[Path] = []
 

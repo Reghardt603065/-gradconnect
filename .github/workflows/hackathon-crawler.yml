@@ -1,0 +1,54 @@
+name: Hackathon Crawler
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: gradconnect-hackathon-crawler
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  crawl:
+    name: Crawl approved hackathon pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      GRADCONNECT_API_URL: ${{ secrets.GRADCONNECT_API_URL }}
+      HACKATHON_IMPORT_TOKEN: ${{ secrets.HACKATHON_IMPORT_TOKEN }}
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: hackathon-crawler/requirements.txt
+
+      - name: Validate crawler configuration
+        shell: bash
+        run: |
+          if [ -z "$GRADCONNECT_API_URL" ]; then
+            echo "GRADCONNECT_API_URL repository secret is missing."
+            exit 1
+          fi
+
+          if [ -z "$HACKATHON_IMPORT_TOKEN" ]; then
+            echo "HACKATHON_IMPORT_TOKEN repository secret is missing."
+            exit 1
+          fi
+
+      - name: Install crawler dependencies
+        working-directory: hackathon-crawler
+        run: python -m pip install -r requirements.txt
+
+      - name: Run hackathon crawler
+        working-directory: hackathon-crawler
+        run: scrapy crawl hackathon_spider

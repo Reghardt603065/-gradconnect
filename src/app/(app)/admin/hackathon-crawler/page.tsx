@@ -1,17 +1,13 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { HackathonCrawlerAdmin } from "@/components/hackathon-crawler-admin";
 import { PageHeader } from "@/components/page-header";
+import { requireUser } from "@/lib/auth-user";
 import { prisma } from "@/lib/prisma";
 
 export default async function HackathonCrawlerAdminPage() {
-  const session = await auth();
+  const user = await requireUser();
 
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
-
-  if (session.user.role !== "ADMIN") {
+  if (user.role !== "ADMIN") {
     redirect("/dashboard");
   }
 
@@ -64,7 +60,7 @@ export default async function HackathonCrawlerAdminPage() {
     <>
       <PageHeader
         title="Hackathon crawler review"
-        description="Choose the pages the crawler may scan, run the crawler, review discovered events, and publish approved hackathons to GradConnect."
+        description="Choose the pages the crawler may scan, start the hosted GitHub Actions crawler, review discovered events, and publish approved hackathons to GradConnect."
       />
       <HackathonCrawlerAdmin
         initialTargets={targets.map((target) => ({

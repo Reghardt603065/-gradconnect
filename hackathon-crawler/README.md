@@ -1,82 +1,43 @@
 # GradConnect Hackathon Crawler
 
-This is the Python crawler used by the normal GradConnect project. It scans admin-approved URLs, stages discovered hackathons for admin review, and never publishes directly to the live Hackathon table.
+The crawler is a normal Scrapy project. Production runs it on demand through GitHub Actions, so GradConnect does not need Railway, Docker, Scrapyd, an always-on PC, or any terminal commands after deployment.
 
-The same crawler code is used locally and when the project is deployed. There is no Docker requirement and there is no separate demo build.
+## Production flow
 
-## Main files
+The GitHub Actions workflow is stored at:
 
-- `hackathon_crawler/spiders/hackathon_spider.py` - scans approved URLs and extracts event details.
-- `hackathon_crawler/pipelines.py` - sends results to the GradConnect staging API.
-- `hackathon_crawler/config.py` - reads the shared GradConnect environment values.
-- `requirements.txt` - Python dependencies.
-- `scrapy.cfg` - Scrapy/Scrapyd project configuration.
+`.github/workflows/hackathon-crawler.yml`
 
-## Local environment
+It starts in two ways:
 
-The crawler automatically checks the parent GradConnect project for the normal root `.env` file. Keep the crawler settings there with the rest of the project settings:
+- An admin presses **Run crawler** on `/admin/hackathon-crawler`.
+- Vercel Cron calls `/api/cron/hackathon-crawler` once per day, which dispatches the same GitHub Actions workflow.
 
-```env
-HACKATHON_IMPORT_TOKEN="your-shared-secret"
-HACKATHON_SCRAPYD_URL="http://localhost:6800"
-HACKATHON_SCRAPYD_PROJECT="hackathon_crawler"
-GRADCONNECT_API_URL="http://localhost:3000"
-```
+The workflow starts a temporary GitHub runner, installs `hackathon-crawler/requirements.txt`, runs `scrapy crawl hackathon_spider`, sends discovered events to GradConnect's staging API, and then shuts down automatically.
 
-`HACKATHON_SCRAPYD_USERNAME` and `HACKATHON_SCRAPYD_PASSWORD` are optional. Leave them unset for the normal local Scrapyd setup.
+Crawler results never publish themselves. They remain in the crawler review queue until an admin approves them.
 
-## First local setup
+## GitHub Actions repository secrets
 
-From `hackathon-crawler`:
+Configure these in the GitHub repository under **Settings -> Secrets and variables -> Actions**:
 
-```powershell
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
+- `GRADCONNECT_API_URL` - the live Vercel production URL, for example `https://your-project.vercel.app`
+- `HACKATHON_IMPORT_TOKEN` - the same secret value configured in Vercel
 
-## Normal local run
+## Vercel production environment variables
 
-Terminal 1, from the GradConnect root:
+Required:
 
-```powershell
-npm run dev
-```
+- `HACKATHON_IMPORT_TOKEN`
+- `GITHUB_CRAWLER_TOKEN` - a fine-grained GitHub token restricted to this repository with Actions read/write permission
+- `CRON_SECRET`
 
-Terminal 2, from `hackathon-crawler`:
+Optional because the project already has defaults:
 
-```powershell
-.\.venv\Scripts\Activate.ps1
-scrapyd
-```
+- `GITHUB_CRAWLER_REPOSITORY=Reghardt603065/-gradconnect`
+- `GITHUB_CRAWLER_WORKFLOW=hackathon-crawler.yml`
+- `GITHUB_CRAWLER_REF=main`
 
-Terminal 3, only when the crawler has not been deployed to the current Scrapyd instance or its Python code changed:
+## Local development
 
-```powershell
-.\.venv\Scripts\Activate.ps1
-scrapyd-deploy
-```
-
-The live GradConnect admin page can then use the **Run crawler** button.
-
-## Direct crawler test
-
-You can bypass Scrapyd and run the spider directly:
-
-```powershell
-scrapy crawl hackathon_spider
-```
-
-## Deployment later
-
-Do not commit `.env` or `.venv`.
-
-The Next.js application reads `HACKATHON_SCRAPYD_URL`, so the same code works with either:
-
-```text
-http://localhost:6800
-```
-
-or a hosted Scrapyd URL.
-
-The hosted Python service should install `requirements.txt`, provide `GRADCONNECT_API_URL` and `HACKATHON_IMPORT_TOKEN` as environment variables, start Scrapyd, and deploy this same Scrapy project to that Scrapyd instance. No source-code rewrite is required.
+The production crawler does not use Scrapyd. If you want to test only the Python crawler locally, activate your Python environment and run `scrapy crawl hackathon_spider` from the `hackathon-crawler` folder.

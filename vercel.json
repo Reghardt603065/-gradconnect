@@ -5,12 +5,12 @@
       "schedule": "0 3 * * *"
     },
     {
-      "path": "/api/cron/reminders",
-      "schedule": "0 5 * * *"
+      "path": "/api/cron/hackathon-crawler",
+      "schedule": "17 4 * * *"
     },
     {
-      "path": "/api/cron/hackathon-crawler",
-      "schedule": "0 4 * * *"
+      "path": "/api/cron/reminders",
+      "schedule": "0 5 * * *"
     }
   ]
 }

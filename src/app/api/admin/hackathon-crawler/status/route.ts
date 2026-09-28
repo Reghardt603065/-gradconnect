@@ -1,6 +1,6 @@
 import { jsonError, jsonSuccess } from "@/lib/api";
 import { requireAdminApiUser } from "@/lib/hackathon-crawler";
-import { getHackathonCrawlerStatus } from "@/lib/hackathon-scrapyd";
+import { getHackathonCrawlerAutomationStatus } from "@/lib/hackathon-github-actions";
 
 export async function GET() {
   const admin = await requireAdminApiUser();
@@ -9,5 +9,5 @@ export async function GET() {
     return jsonError("Admin access required", 403);
   }
 
-  return jsonSuccess(await getHackathonCrawlerStatus());
+  return jsonSuccess(await getHackathonCrawlerAutomationStatus());
 }

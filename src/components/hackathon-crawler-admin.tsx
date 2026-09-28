@@ -21,21 +21,35 @@ type ApiResponse<T> = {
   details?: unknown;
 };
 
-type ScrapydRunResult = {
-  status?: string;
-  jobid?: string;
-  activeTargetCount?: number;
+type CrawlerRunResult = {
+  provider: "github-actions";
+  status: "queued";
+  repository: string;
+  workflow: string;
+  ref: string;
+  activeTargetCount: number;
 };
 
-type ScrapydStatusResult = {
+type CrawlerAutomationStatus = {
+  configured: boolean;
   reachable: boolean;
-  scrapydUrl: string;
-  daemon?: {
-    status?: string;
-    pending?: number;
-    running?: number;
-    finished?: number;
-  };
+  provider: "github-actions";
+  repository: string;
+  workflow: string;
+  ref: string;
+  workflowState?: string;
+  workflowUrl?: string;
+  error?: string;
+  latestRun?: {
+    id: number;
+    status: string;
+    conclusion: string | null;
+    event: string;
+    htmlUrl: string;
+    createdAt: string;
+    updatedAt: string;
+    startedAt: string | null;
+  } | null;
 };
 
 type CrawlTarget = {
@@ -97,7 +111,7 @@ export function HackathonCrawlerAdmin({
   const [error, setError] = useState("");
   const [running, setRunning] = useState(false);
   const [serviceChecking, setServiceChecking] = useState(true);
-  const [serviceStatus, setServiceStatus] = useState<ScrapydStatusResult | null>(null);
+  const [serviceStatus, setServiceStatus] = useState<CrawlerAutomationStatus | null>(null);
 
   const visibleResults = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -221,7 +235,7 @@ export function HackathonCrawlerAdmin({
       const response = await fetch("/api/admin/hackathon-crawler/status", {
         cache: "no-store",
       });
-      const body: ApiResponse<ScrapydStatusResult> = await response.json();
+      const body: ApiResponse<CrawlerAutomationStatus> = await response.json();
 
       if (!response.ok || !body.data) {
         setServiceStatus(null);
@@ -234,12 +248,16 @@ export function HackathonCrawlerAdmin({
       setServiceStatus(body.data);
 
       if (showMessage) {
-        setError("");
-        setMessage(
-          body.data.reachable
-            ? "Scrapyd is online and ready."
-            : "Scrapyd is offline. Start the Scrapyd service before running the crawler.",
-        );
+        const ready =
+          body.data.reachable && body.data.workflowState === "active";
+
+        if (ready) {
+          setError("");
+          setMessage("GitHub Actions crawler automation is configured and ready.");
+        } else {
+          setMessage("");
+          setError(body.data.error || "Crawler automation is not ready yet.");
+        }
       }
     } finally {
       setServiceChecking(false);
@@ -256,34 +274,32 @@ export function HackathonCrawlerAdmin({
         method: "POST",
       });
 
-      const body: ApiResponse<ScrapydRunResult> = await response.json();
+      const body: ApiResponse<CrawlerRunResult> = await response.json();
 
       if (!response.ok) {
         setError(
           body.error ||
-            "The crawler could not be started. Check the Scrapyd terminal for details.",
+            "The crawler could not be queued in GitHub Actions.",
         );
         await checkCrawlerService(false);
         return;
       }
 
-      const jobLabel = body.data?.jobid
-        ? ` Job: ${body.data.jobid}.`
-        : "";
-
       setMessage(
-        `Crawler job started.${jobLabel} Results will refresh automatically in a few seconds.`,
+        "Crawler queued in GitHub Actions. It normally takes a minute or two for new results to appear.",
       );
 
-      await checkCrawlerService(false);
+      window.setTimeout(() => {
+        void checkCrawlerService(false);
+      }, 5_000);
 
       window.setTimeout(() => {
         void refreshResults(false);
-      }, 4_000);
+      }, 20_000);
 
       window.setTimeout(() => {
         void refreshResults(false);
-      }, 9_000);
+      }, 60_000);
     } finally {
       setRunning(false);
     }
@@ -448,7 +464,7 @@ export function HackathonCrawlerAdmin({
           <div>
             <h2 style={{ marginBottom: 6 }}>2. Run the crawler</h2>
             <p className="muted" style={{ margin: 0 }}>
-              The crawler checks Schema.org Event data first, then event cards, then a direct-page fallback for normal hackathon pages.
+              GitHub Actions runs the Scrapy crawler for you. No Scrapyd server, terminal, or always-on PC is required.
             </p>
           </div>
           <div className="job-actions">
@@ -456,16 +472,16 @@ export function HackathonCrawlerAdmin({
               className={`badge ${
                 serviceChecking
                   ? "blue"
-                  : serviceStatus?.reachable
+                  : serviceStatus?.reachable && serviceStatus.workflowState === "active"
                     ? "green"
                     : "red"
               }`}
             >
               {serviceChecking
-                ? "Checking Scrapyd"
-                : serviceStatus?.reachable
-                  ? "Scrapyd online"
-                  : "Scrapyd offline"}
+                ? "Checking automation"
+                : serviceStatus?.reachable && serviceStatus.workflowState === "active"
+                  ? "Automation ready"
+                  : "Setup incomplete"}
             </span>
             <button
               className="btn btn-secondary btn-small"
@@ -473,7 +489,7 @@ export function HackathonCrawlerAdmin({
               disabled={serviceChecking}
               onClick={() => checkCrawlerService(true)}
             >
-              <RefreshCw size={15} /> Check service
+              <RefreshCw size={15} /> Check automation
             </button>
             <button
               className="btn btn-primary"
@@ -485,6 +501,23 @@ export function HackathonCrawlerAdmin({
             </button>
           </div>
         </div>
+
+        {serviceStatus?.latestRun && (
+          <div className="helper" style={{ marginTop: 14 }}>
+            Latest crawler run: {serviceStatus.latestRun.status}
+            {serviceStatus.latestRun.conclusion
+              ? ` / ${serviceStatus.latestRun.conclusion}`
+              : ""}
+            {" · "}
+            <a
+              href={serviceStatus.latestRun.htmlUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open GitHub run
+            </a>
+          </div>
+        )}
 
       </section>
 
