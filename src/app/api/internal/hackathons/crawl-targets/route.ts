@@ -1,9 +1,9 @@
 import { jsonError, jsonSuccess } from "@/lib/api";
-import { hasValidHackathonImportToken } from "@/lib/hackathon-crawler";
+import { hasValidHackathonCrawlerAuth } from "@/lib/hackathon-crawler";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
-  if (!hasValidHackathonImportToken(request)) {
+  if (!(await hasValidHackathonCrawlerAuth(request))) {
     return jsonError("Unauthorized", 401);
   }
 

@@ -2,7 +2,7 @@ import json
 import logging
 from urllib import request as urllib_request
 
-from hackathon_crawler.config import get_gradconnect_api_url, get_import_token
+from hackathon_crawler.config import get_crawler_auth_headers, get_gradconnect_api_url
 
 
 logger = logging.getLogger(__name__)
@@ -18,14 +18,15 @@ class GradConnectApiPipeline:
 
     def open_spider(self):
         self.api_url = get_gradconnect_api_url()
-        self.token = get_import_token()
-
-        if not self.token:
-            logger.warning(
-                "HACKATHON_IMPORT_TOKEN is not configured; staging imports will fail"
-            )
 
     def process_item(self, item):
+        auth_headers = get_crawler_auth_headers()
+        if not auth_headers:
+            raise RuntimeError(
+                "Crawler authentication is unavailable. GitHub Actions should "
+                "provide OIDC automatically; local runs can use HACKATHON_IMPORT_TOKEN."
+            )
+
         payload = json.dumps(dict(item)).encode("utf-8")
         api_request = urllib_request.Request(
             f"{self.api_url}/api/internal/hackathons/import",
@@ -33,8 +34,7 @@ class GradConnectApiPipeline:
             method="POST",
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.token}",
-                "X-GradConnect-Crawler-Token": self.token,
+                **auth_headers,
                 "User-Agent": "GradConnectHackathonCrawler/1.0",
             },
         )
@@ -42,15 +42,14 @@ class GradConnectApiPipeline:
         try:
             with urllib_request.urlopen(api_request, timeout=20) as response:
                 if response.status not in (200, 201):
-                    logger.error(
-                        "GradConnect staging import returned HTTP %s",
-                        response.status,
+                    raise RuntimeError(
+                        f"GradConnect staging import returned HTTP {response.status}"
                     )
-                else:
-                    logger.info(
-                        "Staged crawler result: %s",
-                        item.get("name"),
-                    )
+
+                logger.info(
+                    "Staged crawler result: %s",
+                    item.get("name"),
+                )
         except Exception as exc:
             logger.error(
                 "Failed to stage hackathon result in GradConnect: %s",

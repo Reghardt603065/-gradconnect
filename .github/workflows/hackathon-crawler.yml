@@ -9,6 +9,7 @@ concurrency:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   crawl:
@@ -18,7 +19,6 @@ jobs:
 
     env:
       GRADCONNECT_API_URL: ${{ secrets.GRADCONNECT_API_URL }}
-      HACKATHON_IMPORT_TOKEN: ${{ secrets.HACKATHON_IMPORT_TOKEN }}
       PYTHONUNBUFFERED: "1"
 
     steps:
@@ -40,17 +40,12 @@ jobs:
             exit 1
           fi
 
-          if [ -z "$HACKATHON_IMPORT_TOKEN" ]; then
-            echo "HACKATHON_IMPORT_TOKEN repository secret is missing."
-            exit 1
-          fi
-
       - name: Install crawler dependencies
         working-directory: hackathon-crawler
         run: python -m pip install -r requirements.txt
 
       - name: Verify GradConnect crawler API
-        shell: bash
+        working-directory: hackathon-crawler
         run: |
           python - <<'PY'
           import json
@@ -58,15 +53,19 @@ jobs:
           import urllib.error
           import urllib.request
 
+          from hackathon_crawler.config import get_crawler_auth_headers
+
           base_url = os.environ["GRADCONNECT_API_URL"].rstrip("/")
-          token = os.environ["HACKATHON_IMPORT_TOKEN"].strip()
           url = f"{base_url}/api/internal/hackathons/crawl-targets"
+          auth_headers = get_crawler_auth_headers()
+
+          if not auth_headers:
+              raise SystemExit("GitHub OIDC authentication was not available to the crawler job.")
 
           request = urllib.request.Request(
               url,
               headers={
-                  "Authorization": f"Bearer {token}",
-                  "X-GradConnect-Crawler-Token": token,
+                  **auth_headers,
                   "User-Agent": "GradConnectHackathonCrawler/1.0",
               },
           )
@@ -84,7 +83,10 @@ jobs:
               raise SystemExit(f"GradConnect crawler API rejected the request: {body}")
 
           targets = body.get("data") or []
-          print(f"GradConnect crawler API authenticated successfully. Active targets: {len(targets)}")
+          print(
+              "GitHub OIDC authenticated successfully. "
+              f"Active targets: {len(targets)}"
+          )
           PY
 
       - name: Run hackathon crawler

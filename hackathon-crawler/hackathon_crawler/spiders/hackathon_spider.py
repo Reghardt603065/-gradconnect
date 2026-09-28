@@ -5,7 +5,7 @@ from urllib import request as urllib_request
 
 import scrapy
 
-from hackathon_crawler.config import get_gradconnect_api_url, get_import_token
+from hackathon_crawler.config import get_crawler_auth_headers, get_gradconnect_api_url
 from hackathon_crawler.items import HackathonItem
 
 
@@ -41,20 +41,19 @@ class HackathonSpider(scrapy.Spider):
 
     def _load_targets(self):
         api_url = get_gradconnect_api_url()
-        token = get_import_token()
+        auth_headers = get_crawler_auth_headers()
 
-        if not token:
+        if not auth_headers:
             self.logger.error(
-                "HACKATHON_IMPORT_TOKEN is not configured. Add it to the root "
-                "GradConnect .env file."
+                "Crawler authentication is not available. GitHub Actions should "
+                "provide OIDC automatically; local runs can use HACKATHON_IMPORT_TOKEN."
             )
             return self._fallback_targets()
 
         api_request = urllib_request.Request(
             f"{api_url}/api/internal/hackathons/crawl-targets",
             headers={
-                "Authorization": f"Bearer {token}",
-                "X-GradConnect-Crawler-Token": token,
+                **auth_headers,
                 "User-Agent": "GradConnectHackathonCrawler/1.0",
             },
         )
@@ -90,7 +89,7 @@ class HackathonSpider(scrapy.Spider):
 
             raise RuntimeError(
                 "GradConnect crawl-target authentication/request failed. "
-                "Check GRADCONNECT_API_URL and HACKATHON_IMPORT_TOKEN."
+                "Check GRADCONNECT_API_URL and the GitHub Actions OIDC configuration."
             ) from exc
 
     @staticmethod

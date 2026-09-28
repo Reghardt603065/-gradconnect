@@ -1,11 +1,11 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { jsonError, jsonSuccess, readJson } from "@/lib/api";
-import { hasValidHackathonImportToken } from "@/lib/hackathon-crawler";
+import { hasValidHackathonCrawlerAuth } from "@/lib/hackathon-crawler";
 import { prisma } from "@/lib/prisma";
 import { hackathonCrawlImportSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
-  if (!hasValidHackathonImportToken(request)) {
+  if (!(await hasValidHackathonCrawlerAuth(request))) {
     return jsonError("Unauthorized", 401);
   }
 
