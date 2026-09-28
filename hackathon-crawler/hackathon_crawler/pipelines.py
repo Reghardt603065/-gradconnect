@@ -34,6 +34,8 @@ class GradConnectApiPipeline:
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {self.token}",
+                "X-GradConnect-Crawler-Token": self.token,
+                "User-Agent": "GradConnectHackathonCrawler/1.0",
             },
         )
 
@@ -54,5 +56,6 @@ class GradConnectApiPipeline:
                 "Failed to stage hackathon result in GradConnect: %s",
                 exc,
             )
+            raise
 
         return item

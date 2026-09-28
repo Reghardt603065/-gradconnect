@@ -2,13 +2,20 @@ import { requireApiUser } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 
 export function hasValidHackathonImportToken(request: Request) {
-  const configuredToken = process.env.HACKATHON_IMPORT_TOKEN;
+  const configuredToken = process.env.HACKATHON_IMPORT_TOKEN?.trim() || "";
 
   if (!configuredToken) {
     return false;
   }
 
-  const authorization = request.headers.get("authorization") || "";
+  const crawlerToken =
+    request.headers.get("x-gradconnect-crawler-token")?.trim() || "";
+
+  if (crawlerToken && crawlerToken === configuredToken) {
+    return true;
+  }
+
+  const authorization = request.headers.get("authorization")?.trim() || "";
   return authorization === `Bearer ${configuredToken}`;
 }
 

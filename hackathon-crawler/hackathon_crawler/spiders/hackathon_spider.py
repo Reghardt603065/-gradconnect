@@ -52,7 +52,11 @@ class HackathonSpider(scrapy.Spider):
 
         api_request = urllib_request.Request(
             f"{api_url}/api/internal/hackathons/crawl-targets",
-            headers={"Authorization": f"Bearer {token}"},
+            headers={
+                "Authorization": f"Bearer {token}",
+                "X-GradConnect-Crawler-Token": token,
+                "User-Agent": "GradConnectHackathonCrawler/1.0",
+            },
         )
 
         try:
@@ -75,7 +79,19 @@ class HackathonSpider(scrapy.Spider):
                 api_url,
                 exc,
             )
-            return self._fallback_targets()
+
+            fallback_targets = self._fallback_targets()
+            if fallback_targets:
+                self.logger.warning(
+                    "Using %s HACKATHON_CRAWL_TARGETS fallback target(s)",
+                    len(fallback_targets),
+                )
+                return fallback_targets
+
+            raise RuntimeError(
+                "GradConnect crawl-target authentication/request failed. "
+                "Check GRADCONNECT_API_URL and HACKATHON_IMPORT_TOKEN."
+            ) from exc
 
     @staticmethod
     def _fallback_targets():
