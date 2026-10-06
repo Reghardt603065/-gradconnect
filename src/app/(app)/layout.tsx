@@ -8,6 +8,7 @@ import { Brand } from "@/components/brand";
 import { InactivityLogout } from "@/components/inactivity-logout";
 import { SignOutButton } from "@/components/sign-out-button";
 import { prisma } from "@/lib/prisma";
+import { PageTransition } from "@/components/page-transition";
 
 export default async function AppLayout({
   children,
@@ -95,7 +96,9 @@ export default async function AppLayout({
             </div>
           </header>
 
-          <div className="app-content">{children}</div>
+          <div className="app-content">
+            <PageTransition>{children}</PageTransition>
+          </div>
         </main>
       </div>
     </>

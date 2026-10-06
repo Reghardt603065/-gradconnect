@@ -15,7 +15,12 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         title="Project opportunity"
         description={project.subscribed || project.owner ? "Project details and access information." : "Review the opportunity before deciding whether to subscribe."}
       />
-      <ProjectDetail project={project} />
+      <ProjectDetail
+        project={{
+          ...project,
+          teamsMeetingAt: project.teamsMeetingAt?.toISOString() ?? null,
+        }}
+      />
     </>;
   } catch {
     notFound();

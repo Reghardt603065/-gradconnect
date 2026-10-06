@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
@@ -38,7 +38,6 @@ const graduateLinks: readonly NavItem[] = [
   ["/hackathons", "Hackathons", Trophy],
   ["/teams", "Teams", Users],
   ["/portfolio", "Portfolio", FolderKanban],
-  ["/friends", "Friends", Users],
   ["/peers", "Peers & goals", Users],
   ["/messages", "Messages", MessageCircle],
   ["/notifications", "Notifications", Bell],
@@ -55,7 +54,7 @@ const companyLinks: readonly NavItem[] = [
 ];
 
 const adminLinks: readonly NavItem[] = [
-  ...graduateLinks,
+  ...graduateLinks.filter(([href]) => href !== "/peers"),
   ["/admin/hackathon-approvals", "Hackathon approvals", ClipboardCheck],
   ["/admin/hackathon-crawler", "Admin crawler", ShieldCheck],
 ];
@@ -81,6 +80,7 @@ export function AppNav({
 
   useEffect(() => {
     setMobileOpen(false);
+    document.documentElement.classList.remove("route-transitioning");
   }, [pathname]);
 
   useEffect(() => {
@@ -98,6 +98,28 @@ export function AppNav({
 
   function closeMobileMenu() {
     setMobileOpen(false);
+  }
+
+  function beginNavigation(href: string, event: MouseEvent<HTMLAnchorElement>) {
+    closeMobileMenu();
+
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      pathname === href
+    ) {
+      return;
+    }
+
+    document.documentElement.classList.add("route-transitioning");
+
+    window.setTimeout(() => {
+      document.documentElement.classList.remove("route-transitioning");
+    }, 900);
   }
 
   return (
@@ -151,7 +173,7 @@ export function AppNav({
               key={href}
               href={href}
               className={`nav-link ${active ? "active" : ""}`}
-              onClick={closeMobileMenu}
+              onClick={(event) => beginNavigation(href, event)}
             >
               <Icon size={18} />
 

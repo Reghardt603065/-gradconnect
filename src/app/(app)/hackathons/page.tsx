@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth-user";
 export default async function HackathonsPage() {
   const user = await requireUser();
 
-  const [rows, discovered, submissions] = await Promise.all([
+  const [rows, discovered, submissions, hiddenExternal] = await Promise.all([
     prisma.hackathon.findMany({
       include: {
         participants: {
@@ -47,12 +47,23 @@ export default async function HackathonsPage() {
         publishedHackathonId: true,
       },
     }),
+    prisma.hiddenExternalHackathon.findMany({
+      select: {
+        externalId: true,
+      },
+    }),
   ]);
 
-  const publicHackathons = discovered.map((hackathon) => ({
-    ...hackathon,
-    canDelete: false,
-  }));
+  const hiddenExternalIds = new Set(
+    hiddenExternal.map((item) => item.externalId),
+  );
+
+  const publicHackathons = discovered
+    .filter((hackathon) => !hiddenExternalIds.has(hackathon.id))
+    .map((hackathon) => ({
+      ...hackathon,
+      canDelete: user.role === "ADMIN",
+    }));
 
   const communityHackathons = rows.map((hackathon) => ({
     id: hackathon.id,
@@ -73,7 +84,7 @@ export default async function HackathonsPage() {
     external: false as const,
     dateLabel: null,
     availabilityLabel: "GradConnect community",
-    canDelete: hackathon.createdById === user.id,
+    canDelete: user.role === "ADMIN" || hackathon.createdById === user.id,
   }));
 
   return (

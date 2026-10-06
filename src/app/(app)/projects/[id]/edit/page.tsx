@@ -4,6 +4,28 @@ import { getProjectForUser } from "@/services/project-service";
 import { PageHeader } from "@/components/page-header";
 import { ProjectForm } from "@/components/project-form";
 
+function toSastDateTimeInput(value: Date | string | null | undefined) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const parts = new Intl.DateTimeFormat("en-ZA", {
+    timeZone: "Africa/Johannesburg",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+
+  const valueFor = (type: "year" | "month" | "day" | "hour" | "minute") =>
+    parts.find((part) => part.type === type)?.value || "";
+
+  return `${valueFor("year")}-${valueFor("month")}-${valueFor("day")}T${valueFor("hour")}:${valueFor("minute")}`;
+}
+
 export default async function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
@@ -34,6 +56,8 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
       contactPhone: project.contactPhone ?? "",
       githubUrl: project.githubUrl ?? "",
       liveDemoUrl: project.liveDemoUrl ?? "",
+      teamsMeetingUrl: project.teamsMeetingUrl ?? "",
+      teamsMeetingAt: toSastDateTimeInput(project.teamsMeetingAt),
       maxParticipants: project.maxParticipants,
     }} />
   </>;

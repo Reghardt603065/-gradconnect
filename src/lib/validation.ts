@@ -175,6 +175,24 @@ export const companyProjectSchema = z.object({
   contactPhone: z.string().trim().max(40).optional().default(""),
   githubUrl: optionalUrl,
   liveDemoUrl: optionalUrl,
+  teamsMeetingUrl: z
+    .string()
+    .trim()
+    .url()
+    .or(z.literal(""))
+    .transform((value) => value || null)
+    .optional()
+    .default(null),
+  teamsMeetingAt: z
+    .string()
+    .trim()
+    .refine(
+      (value) => !value || !Number.isNaN(Date.parse(value)),
+      "Enter a valid Teams meeting date and time",
+    )
+    .transform((value) => (value ? new Date(value) : null))
+    .optional()
+    .default(null),
   maxParticipants: z.coerce.number().int().min(1).max(100).default(5),
 });
 

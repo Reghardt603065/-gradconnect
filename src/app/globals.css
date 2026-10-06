@@ -1174,3 +1174,250 @@ p,
   font-size: 0.9rem;
   overflow-x: auto;
 }
+
+
+/* --- Navigation and page transitions ----------------------------------- */
+.app-content {
+  transition:
+    opacity .22s ease,
+    transform .22s ease,
+    filter .22s ease;
+  will-change: opacity, transform, filter;
+}
+
+html.route-transitioning .app-content {
+  opacity: .42;
+  transform: translateY(-8px) scale(.995);
+  filter: blur(1.5px);
+}
+
+html.route-transitioning body::before {
+  content: "";
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 9999;
+  height: 3px;
+  width: 100%;
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--gold), #f0d990, var(--gold));
+  box-shadow: 0 0 14px rgba(199,162,80,.5);
+  animation: route-progress .9s cubic-bezier(.2,.7,.2,1) both;
+  pointer-events: none;
+}
+
+.page-transition {
+  animation: page-enter .42s cubic-bezier(.16,.78,.24,1) both;
+  transform-origin: top center;
+}
+
+.page-transition > * {
+  animation: section-rise .46s cubic-bezier(.16,.78,.24,1) both;
+}
+
+.page-transition > *:nth-child(2) { animation-delay: .035s; }
+.page-transition > *:nth-child(3) { animation-delay: .07s; }
+.page-transition > *:nth-child(4) { animation-delay: .105s; }
+.page-transition > *:nth-child(n+5) { animation-delay: .13s; }
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(.992);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes section-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes route-progress {
+  0% { transform: scaleX(.08); opacity: .85; }
+  55% { transform: scaleX(.72); opacity: 1; }
+  100% { transform: scaleX(.94); opacity: .9; }
+}
+
+.nav-link {
+  transition:
+    background-color .2s ease,
+    color .2s ease,
+    transform .2s ease,
+    box-shadow .2s ease;
+}
+
+.nav-link:hover {
+  transform: translateX(4px);
+  box-shadow: inset 3px 0 0 rgba(199,162,80,.72);
+}
+
+.nav-link.active {
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+
+.card {
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition,
+  .page-transition > *,
+  html.route-transitioning body::before {
+    animation: none;
+  }
+
+  .app-content,
+  .nav-link,
+  .card {
+    transition: none;
+  }
+
+  html.route-transitioning .app-content {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* --- Hackathon card alignment ------------------------------------------ */
+.hackathon-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.hackathon-card-statuses {
+  min-height: 58px;
+  align-content: flex-start;
+}
+
+.hackathon-card-title {
+  margin: 14px 0 8px;
+  line-height: 1.35;
+  min-height: 3.25rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hackathon-card-tech {
+  min-height: 32px;
+  align-content: flex-start;
+}
+
+.hackathon-card-description-wrap {
+  margin-top: 12px;
+}
+
+.hackathon-card-description {
+  margin: 0;
+  line-height: 1.6;
+  min-height: 6.4em;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hackathon-card-description.expanded {
+  display: block;
+  min-height: 0;
+  overflow: visible;
+}
+
+.hackathon-read-more {
+  border: 0;
+  background: transparent;
+  color: var(--navy);
+  padding: 7px 0 0;
+  font-weight: 800;
+  font-size: .82rem;
+}
+
+.hackathon-read-more:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.hackathon-card-meta {
+  margin-top: 14px;
+  min-height: 78px;
+  align-content: flex-start;
+}
+
+.hackathon-card-actions {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+/* --- Project Teams schedule -------------------------------------------- */
+.teams-schedule-form {
+  display: grid;
+  gap: 14px;
+  background: #f8f9fc;
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.project-meeting-preview {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 12px 0;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: #f2f5fb;
+  color: #475467;
+  font-size: .84rem;
+  line-height: 1.45;
+}
+
+.project-meeting-preview svg {
+  flex: 0 0 auto;
+  color: var(--navy);
+}
+
+.teams-meeting-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-color: #d9e2f3;
+  background: linear-gradient(135deg, #fff 0%, #f7f9fd 100%);
+}
+
+.teams-meeting-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.teams-meeting-heading .muted {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 700px) {
+  .teams-meeting-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .teams-meeting-card .btn {
+    width: 100%;
+  }
+}

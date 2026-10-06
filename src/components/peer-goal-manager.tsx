@@ -1,14 +1,11 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import Link from "next/link";
 import {
   Check,
-  MessageCircle,
   Target,
   Trash2,
   UserPlus,
-  UserRound,
   X,
 } from "lucide-react";
 
@@ -87,14 +84,6 @@ export function PeerGoalManager({
     () => new Set(links.flatMap((link) => [link.requesterId, link.addresseeId])),
     [links],
   );
-
-  function goalsWithPeer(peerId: string) {
-    return goals.filter(
-      (goal) =>
-        (goal.ownerId === currentUserId && goal.partnerId === peerId) ||
-        (goal.ownerId === peerId && goal.partnerId === currentUserId),
-    );
-  }
 
   async function connect(id: string) {
     const response = await fetch("/api/peers", {
@@ -240,7 +229,7 @@ export function PeerGoalManager({
         </div>
       )}
 
-      <section className="grid grid-2">
+      <section className="grid">
         <article className="card">
           <h2>Connection requests</h2>
 
@@ -277,80 +266,6 @@ export function PeerGoalManager({
           )}
         </article>
 
-        <article className="card">
-          <h2>Connected peers</h2>
-
-          {connected.length ? (
-            <div className="list">
-              {connected.map((person) => {
-                const sharedGoals = goalsWithPeer(person.id);
-                const completedGoals = sharedGoals.filter(
-                  (goal) => goal.status === "COMPLETED",
-                ).length;
-                const averageProgress = sharedGoals.length
-                  ? Math.round(
-                      sharedGoals.reduce(
-                        (total, goal) => total + goal.progress,
-                        0,
-                      ) / sharedGoals.length,
-                    )
-                  : 0;
-
-                return (
-                  <div key={person.id}>
-                    <div className="list-item">
-                      <div>
-                        <strong>{person.name}</strong>
-                        <div className="helper">
-                          {person.headline || "IT Graduate"}
-                        </div>
-                        <div className="tags" style={{ marginTop: 7 }}>
-                          {person.skills.slice(0, 4).map((skill) => (
-                            <span className="badge" key={skill}>
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="job-actions">
-                        <Link
-                          className="btn btn-secondary btn-small"
-                          href={`/friends/${person.username}`}
-                        >
-                          <UserRound size={14} /> Profile
-                        </Link>
-                        <Link
-                          className="btn btn-secondary btn-small"
-                          href={`/messages?peerId=${person.id}`}
-                        >
-                          <MessageCircle size={14} /> Message
-                        </Link>
-                      </div>
-                    </div>
-
-                    <div className="peer-progress-summary">
-                      <div>
-                        <strong>{sharedGoals.length}</strong>
-                        <span>Shared goals</span>
-                      </div>
-                      <div>
-                        <strong>{completedGoals}</strong>
-                        <span>Completed</span>
-                      </div>
-                      <div>
-                        <strong>{averageProgress}%</strong>
-                        <span>Average progress</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="muted">Accepted peer connections will appear here.</p>
-          )}
-        </article>
       </section>
 
       <section className="grid grid-3" style={{ marginTop: 18 }}>

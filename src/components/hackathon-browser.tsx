@@ -81,6 +81,9 @@ export function HackathonBrowser({
   const [view, setView] = useState<"all" | "joined">("all");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(
+    () => new Set()
+  );
 
   const visibleItems = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -199,7 +202,7 @@ export function HackathonBrowser({
     setError("");
     setMessage("");
 
-    const response = await fetch(`/api/hackathons/${id}`, {
+    const response = await fetch(`/api/hackathons/${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
 
@@ -440,26 +443,62 @@ export function HackathonBrowser({
               : false;
             const canJoin = !hackathon.external && !ended && !registrationClosed;
 
+            const descriptionExpanded = expandedDescriptions.has(hackathon.id);
+            const hasLongDescription = hackathon.description.length > 180;
+
             return (
-              <article className="card" id={hackathon.id} key={hackathon.id}>
+              <article className="card hackathon-card" id={hackathon.id} key={hackathon.id}>
                 <span className="icon-box"><Trophy size={21} /></span>
-                <div className="tags" style={{ marginTop: 14 }}>
+                <div className="tags hackathon-card-statuses" style={{ marginTop: 14 }}>
                   <span className="badge gold">{hackathon.mode.replaceAll("_", " ")}</span>
                   <span className="badge blue">{hackathon.source}</span>
                   {hackathon.external && <span className="badge green">{hackathon.availabilityLabel}</span>}
                   {ended && <span className="badge red">Ended</span>}
                   {!ended && registrationClosed && <span className="badge red">Registration closed</span>}
                   {hackathon.joined && <span className="badge green">Joined</span>}
-                  {hackathon.canDelete && <span className="badge gold">Created by you</span>}
+                  {hackathon.canDelete && !isAdmin && (
+                    <span className="badge gold">Created by you</span>
+                  )}
+                  {isAdmin && (
+                    <span className="badge gold">Admin control</span>
+                  )}
                 </div>
-                <h3 style={{ marginTop: 14 }}>{hackathon.name}</h3>
-                <div className="tags">
+                <h3 className="hackathon-card-title">{hackathon.name}</h3>
+                <div className="tags hackathon-card-tech">
                   {hackathon.technologies.slice(0, 5).map((technology) => (
                     <span className="badge" key={technology}>{technology}</span>
                   ))}
                 </div>
-                <p className="muted">{hackathon.description}</p>
-                <div className="job-meta">
+                <div className="hackathon-card-description-wrap">
+                  <p
+                    className={`muted hackathon-card-description ${
+                      descriptionExpanded ? "expanded" : ""
+                    }`}
+                  >
+                    {hackathon.description}
+                  </p>
+
+                  {hasLongDescription && (
+                    <button
+                      className="hackathon-read-more"
+                      type="button"
+                      onClick={() =>
+                        setExpandedDescriptions((current) => {
+                          const next = new Set(current);
+                          if (next.has(hackathon.id)) {
+                            next.delete(hackathon.id);
+                          } else {
+                            next.add(hackathon.id);
+                          }
+                          return next;
+                        })
+                      }
+                    >
+                      {descriptionExpanded ? "Show less" : "Read more"}
+                    </button>
+                  )}
+                </div>
+                <div className="job-meta hackathon-card-meta">
                   <span><MapPin size={14} /> {hackathon.location || "Online"}</span>
                   <span>
                     <CalendarDays size={14} />
@@ -476,7 +515,7 @@ export function HackathonBrowser({
                       : `${hackathon.participants} joined · ${hackathon.teams} teams`}
                   </span>
                 </div>
-                <div className="job-actions">
+                <div className="job-actions hackathon-card-actions">
                   {hackathon.external ? (
                     hackathon.websiteUrl && (
                       <a className="btn btn-primary btn-small" href={hackathon.websiteUrl} target="_blank" rel="noreferrer">
@@ -520,19 +559,19 @@ export function HackathonBrowser({
                           Event website
                         </a>
                       )}
-
-                      {hackathon.canDelete && (
-                        <button
-                          className="btn btn-danger btn-small"
-                          type="button"
-                          onClick={() =>
-                            deleteHackathon(hackathon.id, hackathon.name)
-                          }
-                        >
-                          <Trash2 size={15} /> Delete
-                        </button>
-                      )}
                     </>
+                  )}
+
+                  {hackathon.canDelete && (
+                    <button
+                      className="btn btn-danger btn-small"
+                      type="button"
+                      onClick={() =>
+                        deleteHackathon(hackathon.id, hackathon.name)
+                      }
+                    >
+                      <Trash2 size={15} /> Delete
+                    </button>
                   )}
                 </div>
               </article>

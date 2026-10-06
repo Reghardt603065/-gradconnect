@@ -25,6 +25,10 @@ export default async function FriendProfilePage({
     redirect("/login");
   }
 
+  if (session.user.role !== "GRADUATE") {
+    redirect(session.user.role === "COMPANY" ? "/dashboard/company" : "/dashboard");
+  }
+
   const { username } = await params;
   const currentUserId = session.user.id;
 
@@ -181,8 +185,8 @@ export default async function FriendProfilePage({
   return (
     <>
       <div style={{ marginBottom: 18 }}>
-        <Link className="btn btn-secondary btn-small" href="/friends">
-          ← Back to friends
+        <Link className="btn btn-secondary btn-small" href="/peers">
+          ← Back to peers & goals
         </Link>
       </div>
 

@@ -23,6 +23,10 @@ export async function PATCH(
     return jsonError("Unauthorized", 401);
   }
 
+  if (sessionUser.role !== "GRADUATE") {
+    return jsonError("Peer connections are only available to graduate accounts.", 403);
+  }
+
   const { id } = await context.params;
   const parsed = schema.safeParse(await readJson(request));
 
@@ -34,6 +38,8 @@ export async function PATCH(
     where: {
       id,
       addresseeId: sessionUser.id,
+      requester: { is: { role: "GRADUATE" } },
+      addressee: { is: { role: "GRADUATE" } },
     },
   });
 
@@ -57,7 +63,7 @@ export async function PATCH(
       "PEER",
       "Peer request accepted",
       `${sessionUser.name || "A graduate"} accepted your connection request.`,
-      "/friends",
+      "/peers",
     );
   }
 

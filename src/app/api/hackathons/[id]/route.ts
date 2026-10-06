@@ -18,20 +18,52 @@ export async function DELETE(
   }
 
   const { id } = await context.params;
+  const isAdmin = sessionUser.role === "ADMIN";
 
-  const deleted = await prisma.hackathon.deleteMany({
+  if (id.startsWith("devpost:")) {
+    if (!isAdmin) {
+      return jsonError("Only admins can remove public hackathon listings.", 403);
+    }
+
+    await prisma.hiddenExternalHackathon.upsert({
+      where: {
+        externalId: id,
+      },
+      update: {
+        hiddenById: sessionUser.id,
+      },
+      create: {
+        externalId: id,
+        hiddenById: sessionUser.id,
+      },
+    });
+
+    return jsonSuccess({ deleted: id });
+  }
+
+  const hackathon = await prisma.hackathon.findUnique({
     where: {
       id,
-      createdById: sessionUser.id,
+    },
+    select: {
+      id: true,
+      createdById: true,
     },
   });
 
-  if (!deleted.count) {
-    return jsonError(
-      "Hackathon not found or you are not allowed to delete it.",
-      404,
-    );
+  if (!hackathon) {
+    return jsonError("Hackathon not found.", 404);
   }
+
+  if (!isAdmin && hackathon.createdById !== sessionUser.id) {
+    return jsonError("You are not allowed to delete this hackathon.", 403);
+  }
+
+  await prisma.hackathon.delete({
+    where: {
+      id,
+    },
+  });
 
   return jsonSuccess({ deleted: id });
 }

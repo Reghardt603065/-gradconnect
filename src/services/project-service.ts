@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { notifyStudentsOfNewProject } from "@/services/project-notification-service";
+import {
+  notifyProjectSubscribersOfMeetingChange,
+  notifyStudentsOfNewProject,
+} from "@/services/project-notification-service";
 
 export async function getCompanyForUser(
   userId: string
@@ -45,6 +48,8 @@ export async function createProjectForUser(
     contactPhone?: string;
     githubUrl?: string;
     liveDemoUrl?: string;
+    teamsMeetingUrl?: string | null;
+    teamsMeetingAt?: Date | null;
     maxParticipants: number;
   }
 ) {
@@ -119,6 +124,7 @@ export async function getAvailableProjects() {
     ),
     maxParticipants:
       project.maxParticipants,
+    teamsMeetingAt: project.teamsMeetingAt,
   }));
 }
 
@@ -210,6 +216,14 @@ export async function getProjectForUser(
 
     liveDemoUrl:
       project.liveDemoUrl,
+
+    teamsMeetingAt:
+      project.teamsMeetingAt,
+
+    teamsMeetingUrl:
+      subscribed || owner
+        ? project.teamsMeetingUrl
+        : null,
   };
 }
 
@@ -392,6 +406,8 @@ export async function updateProjectForUser(
     contactPhone?: string;
     githubUrl?: string;
     liveDemoUrl?: string;
+    teamsMeetingUrl?: string | null;
+    teamsMeetingAt?: Date | null;
     maxParticipants?: number;
     status?: "ACTIVE" | "FULL" | "CLOSED";
   }
@@ -417,6 +433,47 @@ export async function updateProjectForUser(
     throw new Error("Project not found.");
   }
 
+  const meetingMayChange =
+    Object.prototype.hasOwnProperty.call(data, "teamsMeetingAt") ||
+    Object.prototype.hasOwnProperty.call(data, "teamsMeetingUrl");
+
+  const activeSubscriberIds = meetingMayChange
+    ? (
+        await prisma.projectSubscription.findMany({
+          where: {
+            projectId,
+            status: "ACTIVE",
+          },
+          select: {
+            studentId: true,
+          },
+        })
+      ).map((subscription) => subscription.studentId)
+    : [];
+
+  async function notifyMeetingChange(updatedProject: {
+    title: string;
+    teamsMeetingAt: Date | null;
+    teamsMeetingUrl: string | null;
+  }) {
+    if (!meetingMayChange) return;
+
+    await notifyProjectSubscribersOfMeetingChange(
+      projectId,
+      activeSubscriberIds,
+      {
+        title: existing.title,
+        teamsMeetingAt: existing.teamsMeetingAt,
+        teamsMeetingUrl: existing.teamsMeetingUrl,
+      },
+      {
+        title: updatedProject.title,
+        teamsMeetingAt: updatedProject.teamsMeetingAt,
+        teamsMeetingUrl: updatedProject.teamsMeetingUrl,
+      },
+    );
+  }
+
   /*
    * Closing a project:
    * - Project becomes CLOSED
@@ -427,7 +484,7 @@ export async function updateProjectForUser(
     data.status === "CLOSED" &&
     existing.status !== "CLOSED"
   ) {
-    return prisma.$transaction(
+    const closedProject = await prisma.$transaction(
       async (tx) => {
         const updatedProject =
           await tx.companyProject.update({
@@ -452,6 +509,9 @@ export async function updateProjectForUser(
         return updatedProject;
       }
     );
+
+    await notifyMeetingChange(closedProject);
+    return closedProject;
   }
 
   /*
@@ -490,7 +550,7 @@ export async function updateProjectForUser(
         updatedProject.maxParticipants &&
       updatedProject.status !== "FULL"
     ) {
-      return prisma.companyProject.update({
+      const fullProject = await prisma.companyProject.update({
         where: {
           id: projectId,
         },
@@ -498,6 +558,9 @@ export async function updateProjectForUser(
           status: "FULL",
         },
       });
+
+      await notifyMeetingChange(fullProject);
+      return fullProject;
     }
 
     /*
@@ -510,7 +573,7 @@ export async function updateProjectForUser(
         updatedProject.maxParticipants &&
       updatedProject.status === "FULL"
     ) {
-      return prisma.companyProject.update({
+      const activeProject = await prisma.companyProject.update({
         where: {
           id: projectId,
         },
@@ -518,8 +581,12 @@ export async function updateProjectForUser(
           status: "ACTIVE",
         },
       });
+
+      await notifyMeetingChange(activeProject);
+      return activeProject;
     }
   }
 
+  await notifyMeetingChange(updatedProject);
   return updatedProject;
 }

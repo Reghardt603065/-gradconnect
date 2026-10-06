@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Building2, Search, Users } from "lucide-react";
+import { ArrowRight, Building2, CalendarClock, Search, Users } from "lucide-react";
 
 type Project = {
   id: string;
@@ -14,6 +14,7 @@ type Project = {
   company: { id: string; name: string };
   availableSpaces: number;
   maxParticipants: number;
+  teamsMeetingAt?: string | null;
 };
 
 export function ProjectBrowser() {
@@ -113,6 +114,18 @@ export function ProjectBrowser() {
                   <span className={`badge ${statusClass}`}>{statusLabel}</span>
                 </div>
                 <p className="muted" style={{ lineHeight: 1.65 }}>{project.summary}</p>
+                {project.teamsMeetingAt && (
+                  <div className="project-meeting-preview">
+                    <CalendarClock size={15} />
+                    <span>
+                      Teams meeting scheduled for {new Date(project.teamsMeetingAt).toLocaleString("en-ZA", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                        timeZone: "Africa/Johannesburg",
+                      })} SAST
+                    </span>
+                  </div>
+                )}
                 <div className="tags">
                   {project.technologies.map((technology) => <span className="badge" key={technology}>{technology}</span>)}
                 </div>

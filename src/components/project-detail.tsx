@@ -1,14 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   Building2,
+  CalendarClock,
   ExternalLink,
   Linkedin,
   Mail,
   Phone,
+  Video,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -25,6 +27,8 @@ type Project = {
   contactPhone?: string | null;
   githubUrl?: string | null;
   liveDemoUrl?: string | null;
+  teamsMeetingUrl?: string | null;
+  teamsMeetingAt?: string | Date | null;
   status: "ACTIVE" | "FULL" | "CLOSED";
   availableSpaces: number;
   maxParticipants: number;
@@ -50,6 +54,16 @@ export function ProjectDetail({
   const [messageType, setMessageType] = useState<
     "success" | "error"
   >("success");
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setNow(Date.now()),
+      30_000
+    );
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   async function subscription(
     method: "POST" | "DELETE"
@@ -137,6 +151,23 @@ export function ProjectDetail({
       : status === "FULL"
         ? "blue"
         : "red";
+
+  const teamsMeetingTime = project.teamsMeetingAt
+    ? new Date(project.teamsMeetingAt).getTime()
+    : null;
+
+  const teamsMeetingReady =
+    teamsMeetingTime !== null &&
+    !Number.isNaN(teamsMeetingTime) &&
+    now >= teamsMeetingTime;
+
+  const teamsMeetingLabel = project.teamsMeetingAt
+    ? new Date(project.teamsMeetingAt).toLocaleString("en-ZA", {
+        dateStyle: "full",
+        timeStyle: "short",
+        timeZone: "Africa/Johannesburg",
+      }) + " SAST"
+    : null;
 
   return (
     <>
@@ -381,6 +412,53 @@ export function ProjectDetail({
           )}
         </aside>
       </div>
+
+
+      {project.teamsMeetingAt && (
+        <section className="card teams-meeting-card" style={{ marginTop: 18 }}>
+          <div className="teams-meeting-heading">
+            <span className="icon-box">
+              <Video size={20} />
+            </span>
+
+            <div>
+              <h2 style={{ marginBottom: 5 }}>Microsoft Teams meeting</h2>
+              <p className="muted" style={{ margin: 0 }}>
+                <CalendarClock size={15} />
+                Scheduled for {teamsMeetingLabel}
+              </p>
+            </div>
+          </div>
+
+          {project.owner || project.subscribed ? (
+            project.teamsMeetingUrl ? (
+              teamsMeetingReady ? (
+                <a
+                  className="btn btn-primary"
+                  href={project.teamsMeetingUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Video size={17} />
+                  Join Teams meeting
+                  <ExternalLink size={14} />
+                </a>
+              ) : (
+                <button className="btn btn-secondary" type="button" disabled>
+                  <CalendarClock size={17} />
+                  Join button unlocks at the scheduled time
+                </button>
+              )
+            ) : (
+              <span className="muted">No Teams join link has been added yet.</span>
+            )
+          ) : (
+            <span className="muted">
+              Subscribe to this project to access the Teams meeting when it starts.
+            </span>
+          )}
+        </section>
+      )}
 
       {project.owner && (
         <section

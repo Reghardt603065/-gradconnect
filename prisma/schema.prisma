@@ -561,6 +561,8 @@ model CompanyProject {
   contactPhone    String?
   githubUrl       String?
   liveDemoUrl     String?
+  teamsMeetingUrl String?
+  teamsMeetingAt  DateTime?
   maxParticipants Int                     @default(5)
   status          ProjectStatus           @default(ACTIVE)
   createdAt       DateTime                @default(now())
@@ -592,6 +594,15 @@ model ProjectSubscription {
   @@index([status])
 }
 
+
+model HiddenExternalHackathon {
+  id         String   @id @default(uuid())
+  externalId String   @unique
+  hiddenById String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
 
 model HackathonCrawlTarget {
   id        String   @id @default(uuid())

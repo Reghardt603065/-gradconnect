@@ -16,6 +16,8 @@ type ProjectFormData = {
   contactPhone: string;
   githubUrl: string;
   liveDemoUrl: string;
+  teamsMeetingUrl: string;
+  teamsMeetingAt: string;
   maxParticipants: number;
 };
 
@@ -72,6 +74,19 @@ export function ProjectForm({
 
       liveDemoUrl:
         form.get("liveDemoUrl"),
+
+      teamsMeetingUrl:
+        form.get("teamsMeetingUrl"),
+
+      teamsMeetingAt: (() => {
+        const value = String(
+          form.get("teamsMeetingAt") || ""
+        );
+
+        return value
+          ? `${value}:00+02:00`
+          : "";
+      })(),
 
       maxParticipants: Number(
         form.get("maxParticipants") || 5
@@ -305,6 +320,51 @@ export function ProjectForm({
             placeholder="https://..."
           />
         </div>
+      </div>
+
+
+      <div className="card teams-schedule-form">
+        <div>
+          <h3 style={{ marginBottom: 6 }}>Microsoft Teams meeting</h3>
+          <p className="muted" style={{ margin: 0 }}>
+            Optional. Add the Teams join link and the scheduled South African date and time.
+            Subscribed students will see when the meeting is scheduled and the Join button will
+            unlock when the scheduled time arrives.
+          </p>
+        </div>
+
+        <div className="form-row">
+          <div className="field">
+            <label>Teams meeting URL</label>
+
+            <input
+              className="input"
+              name="teamsMeetingUrl"
+              type="url"
+              defaultValue={
+                initial?.teamsMeetingUrl || ""
+              }
+              placeholder="https://teams.microsoft.com/l/meetup-join/..."
+            />
+          </div>
+
+          <div className="field">
+            <label>Meeting date & time (SAST)</label>
+
+            <input
+              className="input"
+              name="teamsMeetingAt"
+              type="datetime-local"
+              defaultValue={
+                initial?.teamsMeetingAt || ""
+              }
+            />
+          </div>
+        </div>
+
+        <span className="helper">
+          Paste the normal Microsoft Teams join link. Students will open that link in Teams or their browser.
+        </span>
       </div>
 
       <div className="field">
