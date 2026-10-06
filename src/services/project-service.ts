@@ -433,6 +433,12 @@ export async function updateProjectForUser(
     throw new Error("Project not found.");
   }
 
+  const existingMeetingSnapshot = {
+    title: existing.title,
+    teamsMeetingAt: existing.teamsMeetingAt,
+    teamsMeetingUrl: existing.teamsMeetingUrl,
+  };
+
   const meetingMayChange =
     Object.prototype.hasOwnProperty.call(data, "teamsMeetingAt") ||
     Object.prototype.hasOwnProperty.call(data, "teamsMeetingUrl");
@@ -461,11 +467,7 @@ export async function updateProjectForUser(
     await notifyProjectSubscribersOfMeetingChange(
       projectId,
       activeSubscriberIds,
-      {
-        title: existing.title,
-        teamsMeetingAt: existing.teamsMeetingAt,
-        teamsMeetingUrl: existing.teamsMeetingUrl,
-      },
+      existingMeetingSnapshot,
       {
         title: updatedProject.title,
         teamsMeetingAt: updatedProject.teamsMeetingAt,
